@@ -1,101 +1,76 @@
-import Image from "next/image";
+import Logo, { Wordmark } from "@/components/brand/Logo";
+
+const sizes = [16, 24, 32, 48, 64, 96, 128, 256, 512];
 
 export default function Home() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <main className="min-h-screen bg-parchment p-12 space-y-16">
+      <h1 className="font-display text-4xl text-ink">Limen — Logo test</h1>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+      {/* Primary: gilt on ink */}
+      <section className="space-y-4">
+        <h2 className="font-display text-2xl text-stone">Primary (gilt on ink)</h2>
+        <div className="flex flex-wrap items-end gap-6">
+          {sizes.map((s) => (
+            <div key={s} className="flex flex-col items-center gap-2">
+              <Logo size={s} variant="primary" />
+              <span className="font-sans text-xs text-stone">{s}px</span>
+            </div>
+          ))}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      </section>
+
+      {/* Inverted: ink on gilt */}
+      <section className="space-y-4">
+        <h2 className="font-display text-2xl text-stone">Inverted (ink on gilt)</h2>
+        <div className="flex flex-wrap items-end gap-6">
+          {sizes.map((s) => (
+            <div key={s} className="flex flex-col items-center gap-2">
+              <Logo size={s} variant="inverted" />
+              <span className="font-sans text-xs text-stone">{s}px</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Bare: mark only on parchment */}
+      <section className="space-y-4">
+        <h2 className="font-display text-2xl text-stone">Bare (on parchment)</h2>
+        <div className="flex flex-wrap items-end gap-6 bg-parchment p-6">
+          {sizes.map((s) => (
+            <div key={s} className="flex flex-col items-center gap-2">
+              <Logo size={s} variant="bare" />
+              <span className="font-sans text-xs text-stone">{s}px</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Wordmark */}
+      <section className="space-y-4">
+        <h2 className="font-display text-2xl text-stone">Wordmark</h2>
+        <div className="flex flex-wrap items-end gap-6">
+          <Wordmark size={24} variant="primary" />
+          <Wordmark size={32} variant="primary" />
+          <Wordmark size={48} variant="primary" />
+          <Wordmark size={64} variant="primary" />
+        </div>
+        <div className="flex flex-wrap items-end gap-6 mt-4">
+          <Wordmark size={24} variant="inverted" />
+          <Wordmark size={32} variant="inverted" />
+          <Wordmark size={48} variant="inverted" />
+          <Wordmark size={64} variant="inverted" />
+        </div>
+      </section>
+
+      {/* Font specimens */}
+      <section className="space-y-4">
+        <h2 className="font-display text-2xl text-stone">Font check</h2>
+        <p className="font-display text-5xl text-ink">The threshold for listings</p>
+        <p className="font-display italic text-3xl text-gilt">Cormorant Garamond — display</p>
+        <p className="font-sans text-base text-ink">DM Sans — UI body copy. 123 Main St, Wilmington NC 28401.</p>
+        <p className="font-sans text-sm text-stone">Small UI text. Filter · Search · Status badges.</p>
+      </section>
+    </main>
   );
 }
