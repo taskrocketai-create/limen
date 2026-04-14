@@ -16,8 +16,8 @@ const config: Config = {
         midnight: "#111110",
       },
       fontFamily: {
-        display: ["Cormorant Garamond", "serif"],
-        sans: ["DM Sans", "sans-serif"],
+        display: ["var(--font-display)", "Cormorant Garamond", "serif"],
+        sans: ["var(--font-sans)", "DM Sans", "sans-serif"],
       },
     },
   },
