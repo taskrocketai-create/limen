@@ -61,7 +61,19 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
-        Update: Partial<Database["public"]["Tables"]["profiles"]["Insert"]>;
+        Update: {
+          id?: string;
+          full_name?: string;
+          license_number?: string | null;
+          brokerage?: string | null;
+          phone?: string | null;
+          stripe_customer_id?: string | null;
+          stripe_subscription_id?: string | null;
+          stripe_subscription_status?: SubscriptionStatus | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
       };
       listings: {
         Row: {
@@ -112,7 +124,31 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
-        Update: Partial<Database["public"]["Tables"]["listings"]["Insert"]>;
+        Update: {
+          id?: string;
+          realtor_id?: string;
+          address_line1?: string;
+          address_line2?: string | null;
+          city?: string;
+          state?: string;
+          zip?: string;
+          price?: number | null;
+          bedrooms?: number | null;
+          bathrooms?: number | null;
+          sqft?: number | null;
+          lot_size?: string | null;
+          year_built?: number | null;
+          property_type?: PropertyType | null;
+          status?: ListingStatus;
+          intake_token?: string;
+          intake_sent_at?: string | null;
+          intake_completed_at?: string | null;
+          mls_number?: string | null;
+          submitted_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
       };
       listing_details: {
         Row: {
@@ -135,7 +171,17 @@ export interface Database {
           seller_notes?: string | null;
           submitted_at?: string | null;
         };
-        Update: Partial<Database["public"]["Tables"]["listing_details"]["Insert"]>;
+        Update: {
+          id?: string;
+          listing_id?: string;
+          highlights?: string[] | null;
+          recent_updates?: string | null;
+          neighborhood_notes?: string | null;
+          hoa_details?: string | null;
+          seller_notes?: string | null;
+          submitted_at?: string | null;
+        };
+        Relationships: [];
       };
       listing_assets: {
         Row: {
@@ -156,7 +202,16 @@ export interface Database {
           uploaded_by: AssetUploader;
           created_at?: string;
         };
-        Update: Partial<Database["public"]["Tables"]["listing_assets"]["Insert"]>;
+        Update: {
+          id?: string;
+          listing_id?: string;
+          storage_path?: string;
+          asset_type?: AssetType;
+          sort_order?: number;
+          uploaded_by?: AssetUploader;
+          created_at?: string;
+        };
+        Relationships: [];
       };
       ai_outputs: {
         Row: {
@@ -165,11 +220,7 @@ export interface Database {
           version: number;
           listing_description: string | null;
           headline_variants: string[] | null;
-          social_captions: {
-            instagram?: string;
-            facebook?: string;
-            twitter?: string;
-          } | null;
+          social_captions: Json | null;
           generated_at: string;
           approved: boolean;
           approved_at: string | null;
@@ -185,7 +236,18 @@ export interface Database {
           approved?: boolean;
           approved_at?: string | null;
         };
-        Update: Partial<Database["public"]["Tables"]["ai_outputs"]["Insert"]>;
+        Update: {
+          id?: string;
+          listing_id?: string;
+          version?: number;
+          listing_description?: string | null;
+          headline_variants?: string[] | null;
+          social_captions?: Json | null;
+          generated_at?: string;
+          approved?: boolean;
+          approved_at?: string | null;
+        };
+        Relationships: [];
       };
       notifications: {
         Row: {
@@ -206,8 +268,19 @@ export interface Database {
           read?: boolean;
           created_at?: string;
         };
-        Update: Partial<Database["public"]["Tables"]["notifications"]["Insert"]>;
+        Update: {
+          id?: string;
+          realtor_id?: string;
+          listing_id?: string | null;
+          type?: NotificationType;
+          message?: string;
+          read?: boolean;
+          created_at?: string;
+        };
+        Relationships: [];
       };
     };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
   };
 }
