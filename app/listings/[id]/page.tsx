@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import ListingOutputClient from "@/components/listings/output/ListingOutputClient";
+import { PREVIEW_MODE, MOCK_LISTING_DETAIL } from "@/utils/preview-data";
 import type { Json } from "@/types/database";
 
 type SocialCaptions = { instagram?: string; facebook?: string; twitter?: string } | null;
@@ -26,6 +27,34 @@ export async function generateMetadata(_a: ListingPageProps) {
 export const dynamic = "force-dynamic";
 
 export default async function ListingPage({ params }: ListingPageProps) {
+  // ── Preview mode ───────────────────────────────────────────────────────
+  if (PREVIEW_MODE) {
+    const m = MOCK_LISTING_DETAIL;
+    return (
+      <ListingOutputClient
+        id={m.id}
+        address_line1={m.address_line1}
+        address_line2={m.address_line2}
+        city={m.city}
+        state={m.state}
+        zip={m.zip}
+        price={m.price}
+        bedrooms={m.bedrooms}
+        bathrooms={m.bathrooms}
+        sqft={m.sqft}
+        property_type={m.property_type}
+        status={m.status}
+        intake_token={m.intake_token}
+        intake_sent_at={m.intake_sent_at}
+        intake_completed_at={m.intake_completed_at}
+        mls_number={m.mls_number}
+        listing_details={m.listing_details}
+        ai_outputs={m.ai_outputs}
+      />
+    );
+  }
+
+  // ── Production ─────────────────────────────────────────────────────────
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
@@ -43,7 +72,6 @@ export default async function ListingPage({ params }: ListingPageProps) {
 
   if (error || !listing) notFound();
 
-  // Redirect sold/archived to the archived view
   if (listing.status === "sold" || listing.status === "archived") {
     redirect(`/listings/${params.id}/archived`);
   }
