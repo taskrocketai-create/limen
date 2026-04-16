@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { PREVIEW_MODE } from "@/utils/preview-data";
 
 // This route is intentionally unauthenticated — the token IS the auth.
 export async function POST(
@@ -8,9 +9,7 @@ export async function POST(
 ) {
   const { token } = params;
 
-  // Validate UUID
-  const UUID_RE =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!UUID_RE.test(token)) {
     return NextResponse.json({ error: "Invalid token." }, { status: 400 });
   }
@@ -30,9 +29,13 @@ export async function POST(
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
+  // Preview mode — acknowledge without hitting the DB
+  if (PREVIEW_MODE || body.listing_id === "preview") {
+    return NextResponse.json({ ok: true });
+  }
+
   const supabase = createAdminClient();
 
-  // Verify the token matches the listing_id — prevents cross-submission
   const { data: listing } = await supabase
     .from("listings")
     .select("id, realtor_id, intake_completed_at")
@@ -50,7 +53,6 @@ export async function POST(
 
   const now = new Date().toISOString();
 
-  // Upsert listing_details
   const { error: detailsError } = await supabase
     .from("listing_details")
     .upsert({
@@ -68,16 +70,11 @@ export async function POST(
     return NextResponse.json({ error: "Failed to save intake." }, { status: 500 });
   }
 
-  // Advance listing status to intake_received
   await supabase
     .from("listings")
-    .update({
-      status: "intake_received",
-      intake_completed_at: now,
-    })
+    .update({ status: "intake_received", intake_completed_at: now })
     .eq("id", listing.id);
 
-  // Create notification for the realtor
   await supabase.from("notifications").insert({
     realtor_id: listing.realtor_id,
     listing_id: listing.id,
