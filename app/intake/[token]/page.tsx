@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createAdminClient } from "@/utils/supabase/admin";
 import HomeownerIntakeForm from "@/components/intake/HomeownerIntakeForm";
+import { PREVIEW_MODE } from "@/utils/preview-data";
 
 interface IntakePageProps {
   params: { token: string };
@@ -14,12 +15,21 @@ export async function generateMetadata(_props: IntakePageProps) {
 export default async function IntakePage({ params }: IntakePageProps) {
   const { token } = params;
 
-  // Validate UUID format before hitting the DB
-  const UUID_RE =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!UUID_RE.test(token)) notFound();
 
-  // Use admin client — this route is unauthenticated
+  // Preview mode — show a demo intake form without hitting the DB
+  if (PREVIEW_MODE) {
+    return (
+      <HomeownerIntakeForm
+        token={token}
+        address="214 Oleander Drive, Wilmington, NC 28403"
+        listingId="preview"
+        alreadySubmitted={false}
+      />
+    );
+  }
+
   const supabase = createAdminClient();
 
   const { data: listing, error } = await supabase
@@ -30,7 +40,6 @@ export default async function IntakePage({ params }: IntakePageProps) {
 
   if (error || !listing) notFound();
 
-  // If intake already submitted show success immediately
   const alreadySubmitted = !!listing.intake_completed_at;
 
   const address = [
