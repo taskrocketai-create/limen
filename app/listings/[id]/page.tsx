@@ -59,7 +59,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: listing, error } = await supabase
+  const { data: listing } = await supabase
     .from("listings")
     .select(`
       id, address_line1, address_line2, city, state, zip,
@@ -68,19 +68,20 @@ export default async function ListingPage({ params }: ListingPageProps) {
     `)
     .eq("id", params.id)
     .eq("realtor_id", user.id)
-    .single();
+    .maybeSingle();
 
-  if (error || !listing) notFound();
+  if (!listing) notFound();
 
   if (listing.status === "sold" || listing.status === "archived") {
     redirect(`/listings/${params.id}/archived`);
   }
 
+  // maybeSingle — no details row is expected until the homeowner submits intake
   const { data: listing_details } = await supabase
     .from("listing_details")
     .select("highlights, recent_updates, neighborhood_notes, hoa_details, seller_notes")
     .eq("listing_id", params.id)
-    .single();
+    .maybeSingle();
 
   const { data: ai_outputs } = await supabase
     .from("ai_outputs")

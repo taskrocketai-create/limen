@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import Logo from "@/components/brand/Logo";
 
-type Step = 1 | 2 | 3 | 4;
+type Step = 1 | 2 | 3 | 4 | 5;
 
 // ---------------------------------------------------------------------------
 // Highlight chips — Step 1
@@ -38,6 +38,14 @@ const HIGHLIGHT_OPTIONS = [
 // ---------------------------------------------------------------------------
 // Form state
 // ---------------------------------------------------------------------------
+interface UploadedPhoto {
+  localId: string;
+  previewUrl: string;
+  storagePath?: string;
+  status: "uploading" | "done" | "error";
+  errorMessage?: string;
+}
+
 interface FormState {
   // Step 1
   highlights: string[];
@@ -49,8 +57,8 @@ interface FormState {
   neighborhood_notes: string;
   // Step 4
   seller_notes: string;
-  // Photo uploads (file objects — uploaded via signed URL separately)
-  photos: File[];
+  // Step 5
+  photos: UploadedPhoto[];
 }
 
 const INITIAL: FormState = {
@@ -70,6 +78,9 @@ const textareaCls =
   "w-full px-4 py-3 bg-white border border-stone/20 rounded-md font-sans text-sm text-ink placeholder:text-stone/40 focus:outline-none focus:border-gilt focus:ring-1 focus:ring-gilt transition-colors resize-none";
 const labelCls = "block font-sans text-sm font-medium text-ink mb-2";
 const hintCls = "font-sans text-xs text-stone mt-1";
+
+const MAX_PHOTOS = 24;
+const MAX_PHOTO_BYTES = 15 * 1024 * 1024;
 
 // ---------------------------------------------------------------------------
 // Step progress — minimal, homeowner-friendly
@@ -131,7 +142,9 @@ function SuccessScreen({ address }: { address: string }) {
   return (
     <div className="min-h-screen bg-ink flex items-center justify-center p-6">
       <div className="max-w-md w-full text-center space-y-6">
-        <Logo size={56} variant="primary" />
+        <div className="flex justify-center">
+          <Logo size={56} variant="primary" />
+        </div>
         <div className="w-16 h-16 rounded-full bg-gilt/20 flex items-center justify-center mx-auto">
           <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden>
             <path d="M5 14L11 20L23 8" stroke="#C8A96E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -194,6 +207,86 @@ export default function HomeownerIntakeForm({
     }));
   }
 
+  // Photo handling -----------------------------------------------------------
+  async function handlePhotoFiles(files: FileList | null) {
+    if (!files || files.length === 0) return;
+
+    const remaining = MAX_PHOTOS - form.photos.length;
+    if (remaining <= 0) return;
+
+    const toUpload = Array.from(files).slice(0, remaining);
+
+    const newPhotos: UploadedPhoto[] = toUpload.map((file) => ({
+      localId: crypto.randomUUID(),
+      previewUrl: URL.createObjectURL(file),
+      status: "uploading" as const,
+    }));
+
+    setForm((f) => ({ ...f, photos: [...f.photos, ...newPhotos] }));
+
+    await Promise.all(
+      toUpload.map(async (file, i) => {
+        const localId = newPhotos[i].localId;
+
+        if (file.size > MAX_PHOTO_BYTES) {
+          setForm((f) => ({
+            ...f,
+            photos: f.photos.map((p) =>
+              p.localId === localId
+                ? { ...p, status: "error", errorMessage: "Too large (max 15 MB)" }
+                : p
+            ),
+          }));
+          return;
+        }
+
+        const body = new FormData();
+        body.append("file", file);
+
+        try {
+          const res = await fetch(`/api/intake/${token}/upload`, {
+            method: "POST",
+            body,
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error ?? "Upload failed");
+          }
+          const { storage_path } = await res.json();
+          setForm((f) => ({
+            ...f,
+            photos: f.photos.map((p) =>
+              p.localId === localId
+                ? { ...p, status: "done", storagePath: storage_path }
+                : p
+            ),
+          }));
+        } catch (err) {
+          setForm((f) => ({
+            ...f,
+            photos: f.photos.map((p) =>
+              p.localId === localId
+                ? {
+                    ...p,
+                    status: "error",
+                    errorMessage: err instanceof Error ? err.message : "Upload failed",
+                  }
+                : p
+            ),
+          }));
+        }
+      })
+    );
+  }
+
+  function removePhoto(localId: string) {
+    setForm((f) => {
+      const photo = f.photos.find((p) => p.localId === localId);
+      if (photo) URL.revokeObjectURL(photo.previewUrl);
+      return { ...f, photos: f.photos.filter((p) => p.localId !== localId) };
+    });
+  }
+
   function next() {
     setStep((s) => (s + 1) as Step);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -230,6 +323,9 @@ export default function HomeownerIntakeForm({
     });
   }
 
+  const uploadingCount = form.photos.filter((p) => p.status === "uploading").length;
+  const canSubmit = uploadingCount === 0 && !isPending;
+
   return (
     <div className="min-h-screen bg-parchment">
       {/* Minimal header — no realtor dashboard chrome */}
@@ -243,12 +339,13 @@ export default function HomeownerIntakeForm({
       <main className="max-w-2xl mx-auto px-4 sm:px-6 py-10 space-y-8">
         {/* Intro */}
         <div className="space-y-2">
-          <StepDots current={step} total={4} />
+          <StepDots current={step} total={5} />
           <h1 className="font-display text-3xl sm:text-4xl text-ink leading-tight">
             {step === 1 && "What makes your home special?"}
             {step === 2 && "Any recent updates?"}
             {step === 3 && "Tell us about the neighbourhood."}
             {step === 4 && "Anything else we should know?"}
+            {step === 5 && "Add a few photos."}
           </h1>
           <p className="font-sans text-sm text-stone">{address}</p>
         </div>
@@ -404,6 +501,102 @@ export default function HomeownerIntakeForm({
                   }
                 />
               </div>
+            </div>
+          )}
+
+          {/* ── Step 5: Photos ── */}
+          {step === 5 && (
+            <div className="space-y-5">
+              <div>
+                <label className={labelCls}>Photos of your home (optional)</label>
+                <p className={hintCls}>
+                  Good photos help your realtor. Take bright, uncluttered shots of each main room — the living room, kitchen, primary bedroom, and any special features. Up to {MAX_PHOTOS} photos, 15 MB each.
+                </p>
+              </div>
+
+              {/* Drop zone / picker */}
+              <label
+                htmlFor="photo-input"
+                className="block border-2 border-dashed border-stone/30 rounded-lg p-8 text-center cursor-pointer hover:border-gilt transition-colors"
+              >
+                <input
+                  id="photo-input"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/heic"
+                  multiple
+                  className="sr-only"
+                  onChange={(e) => {
+                    handlePhotoFiles(e.target.files);
+                    e.target.value = "";
+                  }}
+                  disabled={form.photos.length >= MAX_PHOTOS}
+                />
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" className="mx-auto mb-2 text-stone" aria-hidden>
+                  <path d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <p className="font-sans text-sm font-medium text-ink">
+                  {form.photos.length >= MAX_PHOTOS
+                    ? `Maximum ${MAX_PHOTOS} photos reached`
+                    : "Tap to select photos"}
+                </p>
+                <p className="font-sans text-xs text-stone mt-1">
+                  JPEG, PNG, WebP, or HEIC
+                </p>
+              </label>
+
+              {/* Uploaded previews */}
+              {form.photos.length > 0 && (
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                  {form.photos.map((photo) => (
+                    <div key={photo.localId} className="relative aspect-square rounded-md overflow-hidden bg-stone/10 group">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={photo.previewUrl} alt="" className="w-full h-full object-cover" />
+
+                      {photo.status === "uploading" && (
+                        <div className="absolute inset-0 bg-ink/60 flex items-center justify-center">
+                          <svg className="animate-spin text-gilt" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.3" strokeWidth="3" />
+                            <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                          </svg>
+                        </div>
+                      )}
+
+                      {photo.status === "error" && (
+                        <div className="absolute inset-0 bg-red-900/70 flex items-center justify-center p-2">
+                          <p className="font-sans text-[10px] text-white text-center leading-tight">
+                            {photo.errorMessage ?? "Failed"}
+                          </p>
+                        </div>
+                      )}
+
+                      {photo.status === "done" && (
+                        <div className="absolute top-1 left-1 w-5 h-5 rounded-full bg-gilt flex items-center justify-center">
+                          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden>
+                            <path d="M1.5 5L4 7.5L8.5 2.5" stroke="#1A1814" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </div>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => removePhoto(photo.localId)}
+                        className="absolute top-1 right-1 w-5 h-5 rounded-full bg-ink/70 text-parchment opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                        aria-label="Remove photo"
+                      >
+                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden>
+                          <path d="M2 2L8 8M8 2L2 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {uploadingCount > 0 && (
+                <p className="font-sans text-xs text-stone">
+                  Uploading {uploadingCount} photo{uploadingCount !== 1 ? "s" : ""}…
+                </p>
+              )}
 
               {serverError && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-md">
@@ -412,7 +605,7 @@ export default function HomeownerIntakeForm({
               )}
 
               <p className="font-sans text-xs text-stone">
-                By submitting, you agree that this information will be used to generate your home&apos;s listing description.
+                By submitting, you agree that this information will be used to prepare your home&apos;s listing.
               </p>
             </div>
           )}
@@ -432,7 +625,7 @@ export default function HomeownerIntakeForm({
             <div />
           )}
 
-          {step < 4 ? (
+          {step < 5 ? (
             <button
               onClick={next}
               className="px-6 py-2.5 bg-ink text-gilt font-sans text-sm font-medium rounded-md hover:bg-midnight transition-colors"
@@ -442,10 +635,14 @@ export default function HomeownerIntakeForm({
           ) : (
             <button
               onClick={submit}
-              disabled={isPending}
+              disabled={!canSubmit}
               className="px-6 py-2.5 bg-gilt text-ink font-sans text-sm font-medium rounded-md hover:bg-gilt/90 transition-colors disabled:opacity-60"
             >
-              {isPending ? "Submitting…" : "Submit →"}
+              {isPending
+                ? "Submitting…"
+                : uploadingCount > 0
+                ? "Waiting for uploads…"
+                : "Submit →"}
             </button>
           )}
         </div>

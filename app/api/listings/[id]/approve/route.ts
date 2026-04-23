@@ -18,7 +18,7 @@ export async function POST(
     .select("id")
     .eq("id", params.id)
     .eq("realtor_id", user.id)
-    .single();
+    .maybeSingle();
 
   if (!listing) return NextResponse.json({ error: "Not found." }, { status: 404 });
 

@@ -87,7 +87,7 @@ export async function POST(
     )
     .eq("id", params.id)
     .eq("realtor_id", user.id)
-    .single();
+    .maybeSingle();
 
   if (!listing) return NextResponse.json({ error: "Not found." }, { status: 404 });
 
@@ -103,16 +103,16 @@ export async function POST(
     .from("listing_details")
     .select("highlights, recent_updates, neighborhood_notes, hoa_details, seller_notes")
     .eq("listing_id", params.id)
-    .single();
+    .maybeSingle();
 
-  // Get current max version
+  // Get current max version — no row is fine, falls back to 0
   const { data: latestOutput } = await supabase
     .from("ai_outputs")
     .select("version")
     .eq("listing_id", params.id)
     .order("version", { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   const nextVersion = (latestOutput?.version ?? 0) + 1;
 
@@ -156,8 +156,11 @@ export async function POST(
     });
 
     const text =
-      message.content[0].type === "text" ? message.content[0].text : "";
-    parsed = JSON.parse(text);
+      message.content[0]?.type === "text" ? message.content[0].text : "";
+
+    // Strip any markdown fences the model might add despite instructions
+    const clean = text.replace(/```json\s*|```\s*/g, "").trim();
+    parsed = JSON.parse(clean);
   } catch (err) {
     console.error("Anthropic generation error:", err);
     return NextResponse.json(

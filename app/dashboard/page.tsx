@@ -39,9 +39,9 @@ export default async function DashboardPage() {
     .from("profiles")
     .select("full_name")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
-  const { data: listings = [] } = await supabase
+  const { data: listingsData } = await supabase
     .from("listings")
     .select(
       "id, address_line1, city, state, zip, price, bedrooms, bathrooms, sqft, property_type, status, intake_completed_at, created_at"
@@ -49,7 +49,7 @@ export default async function DashboardPage() {
     .eq("realtor_id", user.id)
     .order("created_at", { ascending: false });
 
-  const { data: notifications = [] } = await supabase
+  const { data: notificationsData } = await supabase
     .from("notifications")
     .select("id, listing_id, type, message, read, created_at")
     .eq("realtor_id", user.id)
@@ -57,19 +57,21 @@ export default async function DashboardPage() {
     .order("created_at", { ascending: false })
     .limit(30);
 
-  const safeListings = listings ?? [];
+  const listings = listingsData ?? [];
+  const notifications = notificationsData ?? [];
+
   const metrics = {
-    total: safeListings.length,
-    intakePending: safeListings.filter((l) => l.status === "intake_pending").length,
-    intakeReceived: safeListings.filter((l) => l.status === "intake_received").length,
-    aiReady: safeListings.filter((l) => l.status === "ai_ready").length,
-    submitted: safeListings.filter((l) => l.status === "submitted").length,
+    total: listings.length,
+    intakePending: listings.filter((l) => l.status === "intake_pending").length,
+    intakeReceived: listings.filter((l) => l.status === "intake_received").length,
+    aiReady: listings.filter((l) => l.status === "ai_ready").length,
+    submitted: listings.filter((l) => l.status === "submitted").length,
   };
 
   return (
     <DashboardClient
-      listings={safeListings}
-      notifications={notifications ?? []}
+      listings={listings}
+      notifications={notifications}
       realtorName={profile?.full_name ?? "Realtor"}
       metrics={metrics}
     />

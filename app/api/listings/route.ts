@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { PREVIEW_MODE } from "@/utils/preview-data";
+import { sendHomeownerIntakeEmail } from "@/utils/email";
 import type { PropertyType } from "@/types/database";
 
 export async function POST(req: Request) {
@@ -42,6 +43,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Address fields are required." }, { status: 422 });
   }
 
+  if (body.send_intake_now && !body.homeowner_email?.trim()) {
+    return NextResponse.json(
+      { error: "Homeowner email is required to send the intake immediately." },
+      { status: 422 }
+    );
+  }
+
   const { data: listing, error } = await supabase
     .from("listings")
     .insert({
@@ -67,6 +75,39 @@ export async function POST(req: Request) {
   if (error || !listing) {
     console.error("listings insert error:", error);
     return NextResponse.json({ error: "Failed to create listing." }, { status: 500 });
+  }
+
+  // Fire the intake email if requested. We don't block the listing creation
+  // on an email delivery failure — the realtor can still copy the link manually.
+  if (body.send_intake_now && body.homeowner_email) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name, brokerage")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? new URL(req.url).origin;
+    const intakeUrl = `${appUrl}/intake/${listing.intake_token}`;
+    const address = [
+      body.address_line1.trim(),
+      body.address_line2,
+      `${body.city.trim()}, ${body.state} ${body.zip.trim()}`,
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    try {
+      await sendHomeownerIntakeEmail({
+        to: body.homeowner_email,
+        homeownerName: body.homeowner_name?.trim() || null,
+        realtorName: profile?.full_name ?? "Your realtor",
+        brokerage: profile?.brokerage ?? null,
+        address,
+        intakeUrl,
+      });
+    } catch (err) {
+      console.error("intake email send error:", err);
+    }
   }
 
   return NextResponse.json({ id: listing.id }, { status: 201 });
