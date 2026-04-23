@@ -47,13 +47,12 @@ export async function middleware(request: NextRequest) {
 
   // Protect realtor routes — redirect unauthenticated users to /login
   const { pathname } = request.nextUrl;
-  const protectedPrefixes = ["/dashboard", "/listings"];
+  const protectedPrefixes = ["/dashboard", "/listings", "/settings"];
 
   const isProtected = protectedPrefixes.some((prefix) =>
     pathname.startsWith(prefix)
   );
 
-  // /intake/[token] is intentionally unauthenticated — never protect it
   if (isProtected && !user) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
@@ -68,12 +67,14 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimisation)
-     * - favicon.ico
+     * - _next/static, _next/image (build assets)
+     * - favicon.ico, robots.txt, sitemap.xml (static files)
      * - /intake/* (homeowner intake — always public)
      * - /api/intake/* (intake API routes — always public)
+     * - /api/stripe/webhook (Stripe cannot authenticate as a user)
+     * - /api/auth/* (auth endpoints — sign in/out, callbacks)
+     * - /auth/* (Supabase auth callback)
      */
-    "/((?!_next/static|_next/image|favicon.ico|intake|api/intake).*)",
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|icon|apple-icon|intake/|api/intake/|api/stripe/webhook|api/auth/|auth/).*)",
   ],
 };

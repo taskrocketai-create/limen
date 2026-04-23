@@ -29,7 +29,7 @@ export default async function ArchivedListingPage({ params }: ArchivedPageProps)
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: listing, error } = await supabase
+  const { data: listing } = await supabase
     .from("listings")
     .select(`
       id, address_line1, address_line2, city, state, zip,
@@ -38,9 +38,9 @@ export default async function ArchivedListingPage({ params }: ArchivedPageProps)
     `)
     .eq("id", params.id)
     .eq("realtor_id", user.id)
-    .single();
+    .maybeSingle();
 
-  if (error || !listing) notFound();
+  if (!listing) notFound();
 
   // If not actually sold/archived, redirect to active view
   if (listing.status !== "sold" && listing.status !== "archived") {
@@ -52,7 +52,7 @@ export default async function ArchivedListingPage({ params }: ArchivedPageProps)
     .select("listing_description, headline_variants, social_captions, approved_at")
     .eq("listing_id", params.id)
     .eq("approved", true)
-    .single();
+    .maybeSingle();
 
   const specs = [
     listing.bedrooms != null && `${listing.bedrooms} bd`,

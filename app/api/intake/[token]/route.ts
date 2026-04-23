@@ -41,7 +41,7 @@ export async function POST(
     .select("id, realtor_id, intake_completed_at")
     .eq("intake_token", token)
     .eq("id", body.listing_id)
-    .single();
+    .maybeSingle();
 
   if (!listing) {
     return NextResponse.json({ error: "Invalid or expired intake link." }, { status: 404 });
@@ -55,15 +55,18 @@ export async function POST(
 
   const { error: detailsError } = await supabase
     .from("listing_details")
-    .upsert({
-      listing_id: listing.id,
-      highlights: body.highlights ?? [],
-      recent_updates: body.recent_updates,
-      hoa_details: body.hoa_details,
-      neighborhood_notes: body.neighborhood_notes,
-      seller_notes: body.seller_notes,
-      submitted_at: now,
-    });
+    .upsert(
+      {
+        listing_id: listing.id,
+        highlights: body.highlights ?? [],
+        recent_updates: body.recent_updates,
+        hoa_details: body.hoa_details,
+        neighborhood_notes: body.neighborhood_notes,
+        seller_notes: body.seller_notes,
+        submitted_at: now,
+      },
+      { onConflict: "listing_id" }
+    );
 
   if (detailsError) {
     console.error("listing_details upsert error:", detailsError);

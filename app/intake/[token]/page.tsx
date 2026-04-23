@@ -32,13 +32,13 @@ export default async function IntakePage({ params }: IntakePageProps) {
 
   const supabase = createAdminClient();
 
-  const { data: listing, error } = await supabase
+  const { data: listing } = await supabase
     .from("listings")
     .select("id, address_line1, address_line2, city, state, zip, status, intake_completed_at")
     .eq("intake_token", token)
-    .single();
+    .maybeSingle();
 
-  if (error || !listing) notFound();
+  if (!listing) notFound();
 
   const alreadySubmitted = !!listing.intake_completed_at;
 

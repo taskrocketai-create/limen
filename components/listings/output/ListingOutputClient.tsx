@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Logo from "@/components/brand/Logo";
 import StatusBadge from "@/components/ui/StatusBadge";
 import type { ListingStatus, PropertyType } from "@/types/database";
@@ -106,7 +107,8 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
     listing_details, ai_outputs,
   } = props;
 
-  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
+  const [, startTransition] = useTransition();
   const [outputs, setOutputs] = useState<AiOutput[]>(ai_outputs);
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState("");
@@ -118,6 +120,10 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
   const [mlsError, setMlsError] = useState("");
   const [mlsSuccess, setMlsSuccess] = useState(false);
   const [intakeCopied, setIntakeCopied] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
+  const [showMarkSoldConfirm, setShowMarkSoldConfirm] = useState(false);
+  const [marking, setMarking] = useState(false);
 
   const currentOutput = outputs.find((o) => o.id === activeVersion) ?? outputs[0] ?? null;
   const intakeUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/intake/${intake_token}`;
@@ -159,6 +165,7 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
         )
       );
       setApproving(false);
+      router.refresh();
     });
   }
 
@@ -167,6 +174,24 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
     navigator.clipboard.writeText(intakeUrl);
     setIntakeCopied(true);
     setTimeout(() => setIntakeCopied(false), 2000);
+  }
+
+  // ── Resend intake email ───────────────────────────────────────────────────
+  function resendIntake() {
+    setResending(true);
+    setResendMessage("");
+    startTransition(async () => {
+      const res = await fetch(`/api/listings/${id}/send-intake`, { method: "POST" });
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}));
+        setResendMessage(b.error ?? "Could not send intake.");
+      } else {
+        setResendMessage("Intake link refreshed.");
+        router.refresh();
+      }
+      setResending(false);
+      setTimeout(() => setResendMessage(""), 3000);
+    });
   }
 
   // ── Submit to MLS ─────────────────────────────────────────────────────────
@@ -183,12 +208,28 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
       }
       setMlsSuccess(true);
       setMlsPending(false);
+      router.refresh();
+    });
+  }
+
+  // ── Mark as sold ──────────────────────────────────────────────────────────
+  function markAsSold() {
+    setMarking(true);
+    startTransition(async () => {
+      const res = await fetch(`/api/listings/${id}/mark-sold`, { method: "POST" });
+      if (res.ok) {
+        router.push(`/listings/${id}/archived`);
+      } else {
+        setMarking(false);
+        setShowMarkSoldConfirm(false);
+      }
     });
   }
 
   const canGenerate = status === "intake_received" || status === "ai_ready" || status === "reviewed";
   const approvedOutput = outputs.find((o) => o.approved);
   const canSubmitMLS = !!approvedOutput && status === "reviewed" && !mlsSuccess;
+  const canMarkSold = status === "submitted";
 
   return (
     <div className="min-h-screen bg-parchment">
@@ -262,6 +303,26 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
                   </button>
                 </div>
               </div>
+
+              {/* Resend button — only show if intake not yet completed */}
+              {!intake_completed_at && (
+                <div className="pt-2 border-t border-stone/10 space-y-2">
+                  <button
+                    onClick={resendIntake}
+                    disabled={resending}
+                    className="w-full px-3 py-2 bg-ink text-gilt font-sans text-xs font-medium rounded hover:bg-midnight transition-colors disabled:opacity-60"
+                  >
+                    {resending
+                      ? "Sending…"
+                      : intake_sent_at
+                      ? "Resend intake to homeowner"
+                      : "Send intake to homeowner"}
+                  </button>
+                  {resendMessage && (
+                    <p className="font-sans text-xs text-gilt text-center">{resendMessage}</p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Homeowner intake detail */}
@@ -296,10 +357,54 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
                   </div>
                 )}
 
+                {listing_details.hoa_details && (
+                  <div>
+                    <p className="font-sans text-xs font-medium text-stone mb-1">HOA</p>
+                    <p className="font-sans text-sm text-ink leading-relaxed">{listing_details.hoa_details}</p>
+                  </div>
+                )}
+
                 {listing_details.seller_notes && (
                   <div>
                     <p className="font-sans text-xs font-medium text-stone mb-1">Seller notes</p>
                     <p className="font-sans text-sm text-ink leading-relaxed">{listing_details.seller_notes}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Mark as sold — only after MLS submission */}
+            {canMarkSold && (
+              <div className="bg-white border border-stone/20 rounded-lg p-5 space-y-3">
+                <h2 className="font-display text-lg text-ink">Close this listing</h2>
+                {!showMarkSoldConfirm ? (
+                  <button
+                    onClick={() => setShowMarkSoldConfirm(true)}
+                    className="w-full px-3 py-2 border border-stone/30 text-ink font-sans text-sm font-medium rounded hover:border-gilt hover:text-gilt transition-colors"
+                  >
+                    Mark as sold
+                  </button>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="font-sans text-xs text-stone">
+                      This will move the listing to your archive. The copy and MLS number stay on file.
+                    </p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={markAsSold}
+                        disabled={marking}
+                        className="flex-1 px-3 py-2 bg-gilt text-ink font-sans text-xs font-medium rounded hover:bg-gilt/90 transition-colors disabled:opacity-60"
+                      >
+                        {marking ? "Marking…" : "Confirm sold"}
+                      </button>
+                      <button
+                        onClick={() => setShowMarkSoldConfirm(false)}
+                        disabled={marking}
+                        className="px-3 py-2 border border-stone/30 text-stone font-sans text-xs rounded hover:border-stone/50 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -328,7 +433,7 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
                 )}
                 <button
                   onClick={generateCopy}
-                  disabled={generating || isPending || !canGenerate}
+                  disabled={generating || !canGenerate}
                   className="px-4 py-2 bg-ink text-gilt font-sans text-sm font-medium rounded-md hover:bg-midnight transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {generating ? "Generating…" : outputs.length > 0 ? "Regenerate" : "Generate copy"}
