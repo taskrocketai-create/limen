@@ -90,6 +90,9 @@ export interface Database {
           sqft: number | null;
           lot_size: string | null;
           year_built: number | null;
+          homeowner_name: string | null;
+          homeowner_email: string | null;
+          homeowner_phone: string | null;
           property_type: PropertyType | null;
           status: ListingStatus;
           intake_token: string;
@@ -114,6 +117,9 @@ export interface Database {
           sqft?: number | null;
           lot_size?: string | null;
           year_built?: number | null;
+          homeowner_name?: string | null;
+          homeowner_email?: string | null;
+          homeowner_phone?: string | null;
           property_type?: PropertyType | null;
           status?: ListingStatus;
           intake_token?: string;
@@ -138,6 +144,9 @@ export interface Database {
           sqft?: number | null;
           lot_size?: string | null;
           year_built?: number | null;
+          homeowner_name?: string | null;
+          homeowner_email?: string | null;
+          homeowner_phone?: string | null;
           property_type?: PropertyType | null;
           status?: ListingStatus;
           intake_token?: string;

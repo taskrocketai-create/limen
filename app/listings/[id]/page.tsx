@@ -50,6 +50,8 @@ export default async function ListingPage({ params }: ListingPageProps) {
         mls_number={m.mls_number}
         listing_details={m.listing_details}
         ai_outputs={m.ai_outputs}
+        photos={[]}
+        allowPhotoUpload={false}
       />
     );
   }
@@ -88,6 +90,28 @@ export default async function ListingPage({ params }: ListingPageProps) {
     .eq("listing_id", params.id)
     .order("version", { ascending: false });
 
+  const { data: listingAssets = [] } = await supabase
+    .from("listing_assets")
+    .select("storage_path, sort_order")
+    .eq("listing_id", params.id)
+    .eq("asset_type", "photo")
+    .order("sort_order", { ascending: true });
+
+  const photoPaths = (listingAssets ?? []).map((asset) => asset.storage_path);
+  const photoUrls: string[] = [];
+  if (photoPaths.length > 0) {
+    const { data: signedUrls } = await supabase
+      .storage
+      .from("listing-assets")
+      .createSignedUrls(photoPaths, 3600);
+
+    for (const signed of signedUrls ?? []) {
+      if (signed?.signedUrl) {
+        photoUrls.push(signed.signedUrl);
+      }
+    }
+  }
+
   return (
     <ListingOutputClient
       {...listing}
@@ -96,6 +120,8 @@ export default async function ListingPage({ params }: ListingPageProps) {
         ...o,
         social_captions: parseSocialCaptions(o.social_captions),
       }))}
+      photos={photoUrls}
+      allowPhotoUpload
     />
   );
 }

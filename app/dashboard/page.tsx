@@ -49,6 +49,47 @@ export default async function DashboardPage() {
     .eq("realtor_id", user.id)
     .order("created_at", { ascending: false });
 
+  const listingIds = (listings ?? []).map((listing) => listing.id);
+  let photoByListingId: Record<string, string> = {};
+
+  if (listingIds.length > 0) {
+    const { data: assets = [] } = await supabase
+      .from("listing_assets")
+      .select("listing_id, storage_path, sort_order")
+      .eq("asset_type", "photo")
+      .in("listing_id", listingIds)
+      .order("sort_order", { ascending: true });
+
+    const firstAssetByListing = new Map<string, string>();
+    for (const asset of assets ?? []) {
+      if (!firstAssetByListing.has(asset.listing_id)) {
+        firstAssetByListing.set(asset.listing_id, asset.storage_path);
+      }
+    }
+
+    const uniquePaths = Array.from(new Set(firstAssetByListing.values()));
+    if (uniquePaths.length > 0) {
+      const { data: signedUrls } = await supabase
+        .storage
+        .from("listing-assets")
+        .createSignedUrls(uniquePaths, 3600);
+
+      const signedUrlByPath = new Map<string, string>();
+      for (let i = 0; i < uniquePaths.length; i += 1) {
+        const signed = signedUrls?.[i];
+        if (signed?.signedUrl) {
+          signedUrlByPath.set(uniquePaths[i], signed.signedUrl);
+        }
+      }
+
+      photoByListingId = Object.fromEntries(
+        Array.from(firstAssetByListing.entries())
+          .map(([listingId, path]) => [listingId, signedUrlByPath.get(path)])
+          .filter((pair): pair is [string, string] => !!pair[1])
+      );
+    }
+  }
+
   const { data: notifications = [] } = await supabase
     .from("notifications")
     .select("id, listing_id, type, message, read, created_at")
@@ -57,7 +98,10 @@ export default async function DashboardPage() {
     .order("created_at", { ascending: false })
     .limit(30);
 
-  const safeListings = listings ?? [];
+  const safeListings = (listings ?? []).map((listing) => ({
+    ...listing,
+    photo_path: photoByListingId[listing.id] ?? null,
+  }));
   const metrics = {
     total: safeListings.length,
     intakePending: safeListings.filter((l) => l.status === "intake_pending").length,

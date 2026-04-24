@@ -144,8 +144,8 @@ function validateStep(step: Step, form: FormState): Record<string, string> {
   }
   if (step === 3) {
     if (!form.homeowner_name.trim()) errors.homeowner_name = "Homeowner name is required.";
-    if (form.send_intake_now && !form.homeowner_email.trim())
-      errors.homeowner_email = "Email is required to send the intake link.";
+    if (form.send_intake_now && !form.homeowner_email.trim() && !form.homeowner_phone.trim())
+      errors.homeowner_email = "Provide an email or phone number to send the intake link.";
     if (form.homeowner_email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.homeowner_email))
       errors.homeowner_email = "Enter a valid email address.";
   }
@@ -491,7 +491,7 @@ export default function NewListingForm() {
                       Send intake link immediately
                     </p>
                     <p className="font-sans text-xs text-stone mt-0.5">
-                      The homeowner will receive an email with their private intake link. Requires an email address above.
+                      The homeowner can receive their private intake link by email and/or SMS. Add at least one contact method above.
                     </p>
                   </div>
                 </label>
