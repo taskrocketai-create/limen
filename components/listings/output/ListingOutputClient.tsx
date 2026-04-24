@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import Logo from "@/components/brand/Logo";
 import StatusBadge from "@/components/ui/StatusBadge";
+import { createClient } from "@/utils/supabase/client";
 import type { ListingStatus, PropertyType } from "@/types/database";
 
 // ---------------------------------------------------------------------------
@@ -47,6 +48,8 @@ interface ListingOutputClientProps {
   mls_number: string | null;
   listing_details: ListingDetail | null;
   ai_outputs: AiOutput[];
+  photos: string[];
+  allowPhotoUpload: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -103,7 +106,7 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
     id, address_line1, city, state, zip,
     price, bedrooms, bathrooms, sqft, status,
     intake_token, intake_sent_at, intake_completed_at,
-    listing_details, ai_outputs,
+    listing_details, ai_outputs, photos: initialPhotos, allowPhotoUpload,
   } = props;
 
   const [isPending, startTransition] = useTransition();
@@ -118,6 +121,9 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
   const [mlsError, setMlsError] = useState("");
   const [mlsSuccess, setMlsSuccess] = useState(false);
   const [intakeCopied, setIntakeCopied] = useState(false);
+  const [photos, setPhotos] = useState(initialPhotos);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const [photoError, setPhotoError] = useState("");
 
   const currentOutput = outputs.find((o) => o.id === activeVersion) ?? outputs[0] ?? null;
   const intakeUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/intake/${intake_token}`;
@@ -167,6 +173,63 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
     navigator.clipboard.writeText(intakeUrl);
     setIntakeCopied(true);
     setTimeout(() => setIntakeCopied(false), 2000);
+  }
+
+  async function uploadPhotos(files: FileList | null) {
+    if (!files || files.length === 0 || !allowPhotoUpload) return;
+
+    setUploadingPhotos(true);
+    setPhotoError("");
+
+    const supabase = createClient();
+    const selectedFiles = Array.from(files);
+    const uploadedPaths: string[] = [];
+    const newPhotoUrls: string[] = [];
+    const baseSortOrder = photos.length;
+
+    try {
+      for (let i = 0; i < selectedFiles.length; i += 1) {
+        const file = selectedFiles[i];
+        const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+        const path = `${id}/${Date.now()}-${i}-${crypto.randomUUID()}.${ext}`;
+
+        const { error: uploadError } = await supabase
+          .storage
+          .from("listing-assets")
+          .upload(path, file, { upsert: false, contentType: file.type });
+
+        if (uploadError) throw new Error(uploadError.message);
+
+        uploadedPaths.push(path);
+
+        const { error: insertError } = await supabase
+          .from("listing_assets")
+          .insert({
+            listing_id: id,
+            storage_path: path,
+            asset_type: "photo",
+            sort_order: baseSortOrder + i,
+            uploaded_by: "realtor",
+          });
+
+        if (insertError) throw new Error(insertError.message);
+      }
+
+      const { data: signed } = await supabase
+        .storage
+        .from("listing-assets")
+        .createSignedUrls(uploadedPaths, 3600);
+
+      for (const item of signed ?? []) {
+        if (item?.signedUrl) newPhotoUrls.push(item.signedUrl);
+      }
+
+      setPhotos((prev) => [...prev, ...newPhotoUrls]);
+    } catch (error) {
+      setPhotoError(error instanceof Error ? error.message : "Photo upload failed.");
+    } finally {
+      setUploadingPhotos(false);
+    }
   }
 
   // ── Submit to MLS ─────────────────────────────────────────────────────────
@@ -228,6 +291,46 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
                 {bedrooms != null && <span>{bedrooms} bd</span>}
                 {bathrooms != null && <span>{bathrooms} ba</span>}
                 {sqft != null && <span>{sqft.toLocaleString()} sqft</span>}
+              </div>
+
+              <div className="pt-2 space-y-3">
+                <h2 className="font-display text-lg text-ink">Photos</h2>
+                {allowPhotoUpload && (
+                  <div className="space-y-2">
+                    <label className="inline-flex items-center gap-2 px-3 py-2 border border-stone/20 rounded-md font-sans text-xs text-stone hover:border-gilt hover:text-gilt transition-colors cursor-pointer">
+                      <span>{uploadingPhotos ? "Uploading…" : "Upload photos"}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        disabled={uploadingPhotos}
+                        className="hidden"
+                        onChange={(e) => uploadPhotos(e.target.files)}
+                      />
+                    </label>
+                    <p className="font-sans text-[11px] text-stone/70">
+                      JPG, PNG, WEBP, or HEIC. You can select multiple files.
+                    </p>
+                  </div>
+                )}
+                {photoError && (
+                  <p className="font-sans text-xs text-red-600">{photoError}</p>
+                )}
+                {photos.length === 0 ? (
+                  <p className="font-sans text-xs text-stone/70">No photos uploaded yet.</p>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    {photos.map((photo, idx) => (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        key={`${photo}-${idx}`}
+                        src={photo}
+                        alt={`${address_line1} photo ${idx + 1}`}
+                        className="w-full h-24 object-cover rounded border border-stone/20"
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 

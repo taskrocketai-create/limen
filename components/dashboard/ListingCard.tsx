@@ -65,6 +65,7 @@ export default function ListingCard({
   status,
   intake_completed_at,
   created_at,
+  photo_path,
 }: ListingCardProps) {
   const specs = [
     bedrooms != null && `${bedrooms} bd`,
@@ -79,17 +80,26 @@ export default function ListingCard({
         : `/listings/${id}`}
       className="group block bg-white border border-stone/20 rounded-lg overflow-hidden hover:border-gilt/60 hover:shadow-md transition-all duration-200"
     >
-      {/* Photo placeholder */}
+      {/* Photo */}
       <div className="h-44 bg-stone/10 flex items-center justify-center relative overflow-hidden">
-        <div className="flex flex-col items-center gap-1 text-stone/40">
-          {/* Doorway icon at small size */}
-          <svg width="28" height="38" viewBox="0 0 36 50" fill="none" aria-hidden>
-            <rect x="0" y="4" width="36" height="6" fill="currentColor" />
-            <rect x="0" y="4" width="6" height="46" fill="currentColor" />
-            <rect x="30" y="4" width="6" height="46" fill="currentColor" />
-          </svg>
-          <span className="font-sans text-xs">No photos yet</span>
-        </div>
+        {photo_path ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={photo_path}
+            alt={`Photo of ${address_line1}`}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="flex flex-col items-center gap-1 text-stone/40">
+            {/* Doorway icon at small size */}
+            <svg width="28" height="38" viewBox="0 0 36 50" fill="none" aria-hidden>
+              <rect x="0" y="4" width="36" height="6" fill="currentColor" />
+              <rect x="0" y="4" width="6" height="46" fill="currentColor" />
+              <rect x="30" y="4" width="6" height="46" fill="currentColor" />
+            </svg>
+            <span className="font-sans text-xs">No photos yet</span>
+          </div>
+        )}
 
         {/* Status badge overlaid top-right */}
         <div className="absolute top-3 right-3">

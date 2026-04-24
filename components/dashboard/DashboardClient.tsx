@@ -22,6 +22,7 @@ interface Listing {
   status: ListingStatus;
   intake_completed_at: string | null;
   created_at: string;
+  photo_path?: string | null;
 }
 
 interface Notification {
