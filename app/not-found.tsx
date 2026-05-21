@@ -10,7 +10,7 @@ export default function NotFound() {
             This threshold leads nowhere
           </h1>
           <p className="text-[#6B6456] text-lg leading-relaxed">
-            The page you're looking for doesn't exist or has been moved.
+            The page you&apos;re looking for doesn&apos;t exist or has been moved.
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
