@@ -1,27 +1,38 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import Link from 'next/link';
 
+interface Profile {
+  full_name: string;
+  brokerage: string;
+  phone: string;
+}
+
 export default function SettingsPage() {
   const supabase = createClient();
-  const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState({ full_name: '', brokerage: '', phone: '' });
+  const [userEmail, setUserEmail] = useState<string>('');
+  const [userId, setUserId] = useState<string>('');
+  const [profile, setProfile] = useState<Profile>({ full_name: '', brokerage: '', phone: '' });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
 
+  const loadProfile = useCallback(async (id: string) => {
+    const { data } = await supabase.from('profiles').select('*').eq('id', id).maybeSingle();
+    if (data) setProfile({ full_name: data.full_name ?? '', brokerage: data.brokerage ?? '', phone: data.phone ?? '' });
+  }, [supabase]);
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
       if (user) {
-        supabase.from('profiles').select('*').eq('id', user.id).maybeSingle().then(({ data }) => {
-          if (data) setProfile({ full_name: data.full_name ?? '', brokerage: data.brokerage ?? '', phone: data.phone ?? '' });
-        });
+        setUserEmail(user.email ?? '');
+        setUserId(user.id);
+        loadProfile(user.id);
       }
     });
-  }, []);
+  }, [supabase, loadProfile]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -64,7 +75,7 @@ export default function SettingsPage() {
           <div className="space-y-4">
             <div>
               <label className="block text-xs tracking-widest uppercase text-[#6B6456] mb-2">Email</label>
-              <div className="text-[#1A1814] bg-[#F7F5F1] px-4 py-3 text-sm">{user?.email}</div>
+              <div className="text-[#1A1814] bg-[#F7F5F1] px-4 py-3 text-sm">{userEmail}</div>
             </div>
             <div>
               <label className="block text-xs tracking-widest uppercase text-[#6B6456] mb-2">Full Name</label>
