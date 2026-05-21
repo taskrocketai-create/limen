@@ -13,7 +13,7 @@ interface Profile {
 export default function SettingsPage() {
   const supabase = createClient();
   const [userEmail, setUserEmail] = useState<string>('');
-  const [userId, setUserId] = useState<string>('');
+ const [, setUserId] = useState<string>('');
   const [profile, setProfile] = useState<Profile>({ full_name: '', brokerage: '', phone: '' });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
