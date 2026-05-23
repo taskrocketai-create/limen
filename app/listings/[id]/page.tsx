@@ -107,11 +107,24 @@ export default async function ListingPage({ params }: ListingPageProps) {
     .eq("listing_id", params.id)
     .single();
 
-  const { data: ai_outputs } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: ai_outputs_raw } = await (supabase as any)
     .from("ai_outputs")
-    .select("id, version, listing_description, headline_variants, social_captions, generated_at, approved, approved_at")
+    .select("id, version, listing_description, headline_variants, social_captions, platform_content, generated_at, approved, approved_at")
     .eq("listing_id", params.id)
     .order("version", { ascending: false });
+
+  const ai_outputs = ai_outputs_raw as Array<{
+    id: string;
+    version: number;
+    listing_description: string;
+    headline_variants: string[];
+    social_captions: Json;
+    platform_content: Json;
+    generated_at: string;
+    approved: boolean;
+    approved_at: string | null;
+  }> | null;
 
   const { data: listing_assets } = await supabase
     .from("listing_assets")
@@ -136,7 +149,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
       ai_outputs={(ai_outputs ?? []).map((o) => ({
         ...o,
         social_captions: parseSocialCaptions(o.social_captions),
-        platform_content: parsePlatformContent(o.social_captions),
+        platform_content: parsePlatformContent(o.platform_content),
       }))}
     />
   );
