@@ -25,7 +25,6 @@ export async function POST(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  // Verify listing ownership
   const { data: listing } = await supabase
     .from('listings')
     .select('id')
@@ -53,7 +52,6 @@ export async function POST(
     .from('listing-assets')
     .getPublicUrl(path);
 
-  // Get current max sort_order
   const { data: existing } = await supabase
     .from('listing_assets')
     .select('sort_order')
@@ -81,10 +79,7 @@ export async function POST(
   return NextResponse.json({ id: asset.id, url: publicUrl, path, sort_order: sortOrder });
 }
 
-export async function DELETE(
-  request: Request,
-  _context: unknown
-)
+export async function DELETE(request: Request) {
   const cookieStore = cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -106,10 +101,7 @@ export async function DELETE(
 
   const { assetId, path } = await request.json();
 
-  // Delete from storage
   await supabase.storage.from('listing-assets').remove([path]);
-
-  // Delete from DB
   await supabase.from('listing_assets').delete().eq('id', assetId);
 
   return NextResponse.json({ success: true });
