@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import Logo from "@/components/brand/Logo";
 import StatusBadge from "@/components/ui/StatusBadge";
+import PhotoUploader from "@/components/listings/output/PhotoUploader";
 import type { ListingStatus, PropertyType } from "@/types/database";
 
 // ---------------------------------------------------------------------------
@@ -28,6 +29,13 @@ interface ListingDetail {
   seller_notes: string | null;
 }
 
+interface Photo {
+  id: string;
+  url: string;
+  path: string;
+  sort_order: number;
+}
+
 interface ListingOutputClientProps {
   id: string;
   address_line1: string;
@@ -46,6 +54,7 @@ interface ListingOutputClientProps {
   intake_completed_at: string | null;
   mls_number: string | null;
   listing_details: ListingDetail | null;
+  photos: Photo[];
   ai_outputs: AiOutput[];
 }
 
@@ -103,7 +112,7 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
     id, address_line1, city, state, zip,
     price, bedrooms, bathrooms, sqft, status,
     intake_token, intake_sent_at, intake_completed_at,
-    listing_details, ai_outputs,
+    listing_details, photos, ai_outputs,
   } = props;
 
   const [isPending, startTransition] = useTransition();
@@ -264,6 +273,9 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
               </div>
             </div>
 
+            {/* Photo uploader */}
+            <PhotoUploader listingId={id} initialPhotos={photos} />
+
             {/* Homeowner intake detail */}
             {listing_details && (
               <div className="bg-white border border-stone/20 rounded-lg p-5 space-y-4">
@@ -407,7 +419,17 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
                 {currentOutput.listing_description && (
                   <div className="bg-white border border-stone/20 rounded-lg p-5 space-y-3">
                     <div className="flex items-center justify-between">
-                      <h3 className="font-display text-lg text-ink">Listing description</h3>
+                      <div>
+                        <h3 className="font-display text-lg text-ink">Listing description</h3>
+                        <p className="font-sans text-xs text-stone/60 mt-0.5">
+                          {currentOutput.listing_description.length} characters
+                          {currentOutput.listing_description.length <= 500
+                            ? " · MLS ready ✓"
+                            : currentOutput.listing_description.length <= 1000
+                            ? " · Within typical MLS limits"
+                            : " · May exceed some MLS character limits"}
+                        </p>
+                      </div>
                       <CopyButton text={currentOutput.listing_description} />
                     </div>
                     <p className="font-sans text-sm text-ink leading-relaxed whitespace-pre-wrap">
