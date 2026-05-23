@@ -221,6 +221,7 @@ export interface Database {
           listing_description: string | null;
           headline_variants: string[] | null;
           social_captions: Json | null;
+          platform_content: Json | null;
           generated_at: string;
           approved: boolean;
           approved_at: string | null;
@@ -232,6 +233,7 @@ export interface Database {
           listing_description?: string | null;
           headline_variants?: string[] | null;
           social_captions?: Json | null;
+          platform_content?: Json | null;
           generated_at?: string;
           approved?: boolean;
           approved_at?: string | null;
@@ -243,6 +245,7 @@ export interface Database {
           listing_description?: string | null;
           headline_variants?: string[] | null;
           social_captions?: Json | null;
+          platform_content?: Json | null;
           generated_at?: string;
           approved?: boolean;
           approved_at?: string | null;
