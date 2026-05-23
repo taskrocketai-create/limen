@@ -138,6 +138,50 @@ export async function POST(
     .eq("listing_id", params.id)
     .single();
 
+  // Fetch up to 5 listing photos for vision analysis
+  const { data: assets } = await supabase
+    .from("listing_assets")
+    .select("storage_path")
+    .eq("listing_id", params.id)
+    .eq("asset_type", "photo")
+    .order("sort_order", { ascending: true })
+    .limit(5);
+
+  // Download photos and convert to base64 for vision
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  type ImageBlock = {
+    type: "image";
+    source: {
+      type: "base64";
+      media_type: "image/jpeg" | "image/png" | "image/webp" | "image/gif";
+      data: string;
+    };
+  };
+  const photoContents: ImageBlock[] = [];
+
+  if (assets && assets.length > 0) {
+    for (const asset of assets) {
+      try {
+        const photoUrl = `${supabaseUrl}/storage/v1/object/public/listing-assets/${asset.storage_path}`;
+        const res = await fetch(photoUrl);
+        if (!res.ok) continue;
+        const buffer = await res.arrayBuffer();
+        const base64 = Buffer.from(buffer).toString("base64");
+        const rawType = res.headers.get("content-type")?.split(";")[0] ?? "image/jpeg";
+        const validTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"] as const;
+        const mediaType = validTypes.includes(rawType as typeof validTypes[number])
+          ? (rawType as typeof validTypes[number])
+          : "image/jpeg";
+        photoContents.push({
+          type: "image",
+          source: { type: "base64", media_type: mediaType, data: base64 },
+        });
+      } catch {
+        // Skip failed photo downloads
+      }
+    }
+  }
+
   const { data: latestOutput } = await supabase
     .from("ai_outputs")
     .select("version")
@@ -192,12 +236,22 @@ export async function POST(
   };
 
   try {
+    const userContent: Anthropic.MessageParam["content"] = [
+      ...photoContents,
+      {
+        type: "text",
+        text: photoContents.length > 0
+          ? `I'm sharing ${photoContents.length} photo(s) of this property. Please analyze what you see in the photos — flooring types, finishes, room conditions, natural light, kitchen and bathroom quality, outdoor spaces, and any standout features — and incorporate these specific visual observations into all the copy you generate. Do not make assumptions beyond what's visible. Now generate the listing content:\n\n${prompt}`
+          : prompt,
+      },
+    ];
+
     const message = await anthropic.messages.create({
       model: "claude-sonnet-4-20250514",
       max_tokens: 4096,
       system:
-        "You are a professional real estate copywriter. Always respond with valid JSON only — no markdown code fences, no preamble.",
-      messages: [{ role: "user", content: prompt }],
+        "You are a professional real estate copywriter with expert visual analysis skills. Always respond with valid JSON only — no markdown code fences, no preamble.",
+      messages: [{ role: "user", content: userContent }],
     });
 
     const text =
