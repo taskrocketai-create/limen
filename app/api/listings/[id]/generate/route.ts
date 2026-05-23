@@ -31,9 +31,9 @@ function buildPrompt(data: {
     .filter(Boolean)
     .join(", ");
 
-  return `You are a professional real estate copywriter specialising in high-quality, evocative listing descriptions for residential properties.
+  return `You are a professional real estate copywriter specialising in high-quality listing content for residential properties.
 
-Generate listing copy for the following property. All copy must be specific to these details — never use generic filler.
+Generate comprehensive listing content for the following property. All copy must be specific — never use generic filler.
 
 ---
 PROPERTY: ${data.address}
@@ -55,18 +55,52 @@ Return ONLY valid JSON in this exact shape — no markdown, no preamble:
   "social_captions": {
     "instagram": "...",
     "facebook": "...",
-    "twitter": "..."
+    "twitter": "...",
+    "tiktok": "...",
+    "linkedin": "...",
+    "nextdoor": "..."
+  },
+  "platform_content": {
+    "mls": {
+      "description": "...",
+      "agent_remarks": "...",
+      "highlights": ["...", "...", "...", "...", "..."]
+    },
+    "zillow": {
+      "description": "...",
+      "highlights": ["...", "...", "...", "...", "..."],
+      "what_i_love": "..."
+    },
+    "realtor_com": {
+      "description": "...",
+      "highlights": ["...", "...", "...", "...", "..."]
+    },
+    "google": {
+      "post": "..."
+    }
   }
 }
 
 Rules:
-- listing_description: 150–250 words. Warm, specific, no clichés. Lead with the strongest feature. End with location context.
-- headline_variants: exactly 3 distinct headline options, each under 12 words, in Cormorant Garamond display style (elegant, evocative, not salesy).
-- instagram: 100–150 words including relevant hashtags at end. Conversational, aspirational.
-- facebook: 120–180 words. More informational, suitable for sharing. Include key specs.
-- twitter: under 240 characters including property address.
-- Never mention the realtor's name or brokerage.
-- Never include a price unless provided above.`;
+- listing_description: 150-250 words. Warm, specific, no clichés. Lead with the strongest feature. End with location context.
+- headline_variants: exactly 3 distinct headline options, each under 12 words. Elegant and evocative, not salesy.
+- instagram: 100-150 words, conversational and aspirational. Include 10-15 relevant hashtags at end.
+- facebook: 120-180 words. Informational and shareable. Include key specs. Friendly tone.
+- twitter: under 240 characters including address. Punchy and specific.
+- tiktok: a video script outline, 60-90 seconds. Include hook, 3 key moments to show, and closing call to action. Format as walking-through narration a realtor would say on camera.
+- linkedin: 100-150 words. Professional tone. Focus on investment value, neighborhood growth, and property specs.
+- nextdoor: 80-120 words. Hyper-local, neighborly tone. Reference the neighborhood, nearby amenities, and community feel.
+- mls.description: 200-500 characters. Factual, spec-forward, no first-person. Standard MLS style.
+- mls.agent_remarks: 100-200 characters. Agent-to-agent notes about showing instructions, special features, or offers.
+- mls.highlights: exactly 5 bullet points, each under 10 words. Key selling points only.
+- zillow.description: up to 2500 characters. Warm and detailed. Zillow buyers want the full story.
+- zillow.highlights: exactly 5 bullet points matching Zillow home highlight format.
+- zillow.what_i_love: 50-100 words. First-person from the seller's perspective. Emotional and specific.
+- realtor_com.description: 200-400 words. Similar to Zillow but slightly more formal.
+- realtor_com.highlights: exactly 5 bullet points.
+- google.post: 100-150 words. Suitable for a Google Business Profile update. Include call to action.
+- Never mention the realtor name or brokerage.
+- Never include price unless provided above.`;
 }
 
 export async function POST(
@@ -79,7 +113,6 @@ export async function POST(
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  // Fetch listing + details — verify ownership
   const { data: listing } = await supabase
     .from("listings")
     .select(
@@ -105,7 +138,6 @@ export async function POST(
     .eq("listing_id", params.id)
     .single();
 
-  // Get current max version
   const { data: latestOutput } = await supabase
     .from("ai_outputs")
     .select("version")
@@ -143,13 +175,26 @@ export async function POST(
   let parsed: {
     listing_description: string;
     headline_variants: string[];
-    social_captions: { instagram: string; facebook: string; twitter: string };
+    social_captions: {
+      instagram: string;
+      facebook: string;
+      twitter: string;
+      tiktok: string;
+      linkedin: string;
+      nextdoor: string;
+    };
+    platform_content: {
+      mls: { description: string; agent_remarks: string; highlights: string[] };
+      zillow: { description: string; highlights: string[]; what_i_love: string };
+      realtor_com: { description: string; highlights: string[] };
+      google: { post: string };
+    };
   };
 
   try {
     const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 2048,
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 4096,
       system:
         "You are a professional real estate copywriter. Always respond with valid JSON only — no markdown code fences, no preamble.",
       messages: [{ role: "user", content: prompt }],
@@ -166,16 +211,19 @@ export async function POST(
     );
   }
 
-  // Persist to ai_outputs
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const insertData: any = {
+    listing_id: params.id,
+    version: nextVersion,
+    listing_description: parsed.listing_description,
+    headline_variants: parsed.headline_variants,
+    social_captions: parsed.social_captions,
+    platform_content: parsed.platform_content,
+  };
+
   const { data: newOutput, error: insertError } = await supabase
     .from("ai_outputs")
-    .insert({
-      listing_id: params.id,
-      version: nextVersion,
-      listing_description: parsed.listing_description,
-      headline_variants: parsed.headline_variants,
-      social_captions: parsed.social_captions,
-    })
+    .insert(insertData)
     .select("id, version, listing_description, headline_variants, social_captions, generated_at, approved, approved_at")
     .single();
 
@@ -184,7 +232,6 @@ export async function POST(
     return NextResponse.json({ error: "Failed to save output." }, { status: 500 });
   }
 
-  // Advance status to ai_ready if still at intake_received
   if (listing.status === "intake_received") {
     await supabase
       .from("listings")
@@ -202,5 +249,6 @@ export async function POST(
   return NextResponse.json({
     ...newOutput,
     social_captions: parsed.social_captions,
+    platform_content: parsed.platform_content,
   });
 }
