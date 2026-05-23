@@ -236,7 +236,7 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
             </span>
           )}
           <span className="font-sans text-xs text-stone hidden sm:block">
-            {packagesUsed}/10 packages
+            {packagesUsed}/20 packages
           </span>
         </div>
       </header>
@@ -356,13 +356,19 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
                     ))}
                   </select>
                 )}
-                <button
-                  onClick={generateCopy}
-                  disabled={generating || isPending || !canGenerate}
-                  className="px-4 py-2 bg-ink text-gilt font-sans text-sm font-medium rounded-md hover:bg-midnight transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {generating ? "Generating…" : outputs.length > 0 ? "Regenerate" : "Generate copy"}
-                </button>
+                {isLocked ? (
+                  <span className="font-sans text-xs text-stone bg-parchment border border-stone/20 px-4 py-2 rounded-md">
+                    🔒 Locked — create a Refresh Package to make changes
+                  </span>
+                ) : (
+                  <button
+                    onClick={generateCopy}
+                    disabled={generating || isPending || !canGenerate}
+                    className="px-4 py-2 bg-ink text-gilt font-sans text-sm font-medium rounded-md hover:bg-midnight transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {generating ? "Generating…" : outputs.length > 0 ? "Regenerate" : "Generate copy"}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -507,16 +513,16 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
         <div className="flex items-center gap-3">
           <span className="font-sans text-xs text-stone">Approved listing packages this month</span>
           <div className="flex gap-1">
-            {Array.from({ length: 10 }).map((_, i) => (
+            {Array.from({ length: 20 }).map((_, i) => (
               <div
                 key={i}
                 className={`w-4 h-2 rounded-sm ${i < packagesUsed ? "bg-gilt" : "bg-stone/20"}`}
               />
             ))}
           </div>
-          <span className="font-sans text-xs font-medium text-ink">{packagesUsed} / 10</span>
+          <span className="font-sans text-xs font-medium text-ink">{packagesUsed} / 20</span>
         </div>
-        {packagesUsed >= 10 && (
+        {packagesUsed >= 20 && (
           <span className="font-sans text-xs text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded">
             Additional packages $5 each
           </span>
@@ -536,13 +542,13 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
             <div className="bg-white border border-stone/20 p-4 space-y-2">
               <div className="flex justify-between font-sans text-sm">
                 <span className="text-stone">Packages used this month</span>
-                <span className="text-ink font-medium">{packagesUsed} / 10</span>
+                <span className="text-ink font-medium">{packagesUsed} / 20</span>
               </div>
               <div className="flex justify-between font-sans text-sm">
                 <span className="text-stone">After approval</span>
-                <span className="text-gilt font-medium">{packagesUsed + 1} / 10</span>
+                <span className="text-gilt font-medium">{packagesUsed + 1} / 20</span>
               </div>
-              {packagesUsed >= 10 && (
+              {packagesUsed >= 20 && (
                 <div className="flex justify-between font-sans text-sm border-t border-stone/20 pt-2">
                   <span className="text-stone">Additional package charge</span>
                   <span className="text-ink font-medium">$5.00</span>
