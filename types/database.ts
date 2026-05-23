@@ -46,6 +46,8 @@ export interface Database {
           stripe_customer_id: string | null;
           stripe_subscription_id: string | null;
           stripe_subscription_status: SubscriptionStatus | null;
+          agency_id: string | null;
+          license_verified: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -58,6 +60,8 @@ export interface Database {
           stripe_customer_id?: string | null;
           stripe_subscription_id?: string | null;
           stripe_subscription_status?: SubscriptionStatus | null;
+          agency_id?: string | null;
+          license_verified?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -70,6 +74,8 @@ export interface Database {
           stripe_customer_id?: string | null;
           stripe_subscription_id?: string | null;
           stripe_subscription_status?: SubscriptionStatus | null;
+          agency_id?: string | null;
+          license_verified?: boolean;
           created_at?: string;
           updated_at?: string;
         };
