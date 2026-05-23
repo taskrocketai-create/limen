@@ -231,6 +231,8 @@ export interface Database {
           generated_at: string;
           approved: boolean;
           approved_at: string | null;
+          locked: boolean;
+          locked_at: string | null;
         };
         Insert: {
           id?: string;
@@ -243,6 +245,8 @@ export interface Database {
           generated_at?: string;
           approved?: boolean;
           approved_at?: string | null;
+          locked?: boolean;
+          locked_at?: string | null;
         };
         Update: {
           id?: string;
@@ -255,6 +259,8 @@ export interface Database {
           generated_at?: string;
           approved?: boolean;
           approved_at?: string | null;
+          locked?: boolean;
+          locked_at?: string | null;
         };
         Relationships: [];
       };
