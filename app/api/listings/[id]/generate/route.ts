@@ -224,6 +224,11 @@ export async function POST(
     .select("id, version, listing_description, headline_variants, social_captions, platform_content, generated_at, approved, approved_at")
     .single();
 
+  if (insertError || !newOutput) {
+    console.error("ai_outputs insert error:", JSON.stringify(insertError));
+    return NextResponse.json({ error: "Failed to save output." }, { status: 500 });
+  }
+
   if (listing.status === "intake_received") {
     await supabase
       .from("listings")
