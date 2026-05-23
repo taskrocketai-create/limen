@@ -33,6 +33,8 @@ interface AiOutput {
   generated_at: string;
   approved: boolean;
   approved_at: string | null;
+  locked: boolean;
+  locked_at: string | null;
 }
 
 interface ListingDetail {
@@ -70,6 +72,8 @@ interface ListingOutputClientProps {
   listing_details: ListingDetail | null;
   photos: Photo[];
   ai_outputs: AiOutput[];
+  listing_locked: boolean;
+  packages_used: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -108,12 +112,16 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
     price, bedrooms, bathrooms, sqft, status,
     intake_token, intake_sent_at, intake_completed_at,
     listing_details, photos, ai_outputs,
+    listing_locked, packages_used: initialPackagesUsed,
   } = props;
 
   const [isPending, startTransition] = useTransition();
   const [outputs, setOutputs] = useState<AiOutput[]>(ai_outputs);
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState("");
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [packagesUsed, setPackagesUsed] = useState(initialPackagesUsed);
+  const isLocked = listing_locked;
   const [activeVersion, setActiveVersion] = useState<string | null>(
     ai_outputs.length > 0 ? ai_outputs[0].id : null
   );
@@ -152,20 +160,23 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
   // ── Approve output ────────────────────────────────────────────────────────
   function approveOutput() {
     if (!currentOutput) return;
+    setShowConfirmModal(false);
     setApproving(true);
     startTransition(async () => {
-      await fetch(`/api/listings/${id}/approve`, {
+      const res = await fetch(`/api/listings/${id}/approve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ output_id: currentOutput.id }),
       });
+      const data = await res.json().catch(() => ({}));
       setOutputs((prev) =>
         prev.map((o) =>
           o.id === currentOutput.id
-            ? { ...o, approved: true, approved_at: new Date().toISOString() }
+            ? { ...o, approved: true, approved_at: new Date().toISOString(), locked: true, locked_at: new Date().toISOString() }
             : o
         )
       );
+      if (data.packages_used) setPackagesUsed(data.packages_used);
       setApproving(false);
     });
   }
@@ -194,7 +205,7 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
     });
   }
 
-  const canGenerate = status === "intake_received" || status === "ai_ready" || status === "reviewed";
+  const canGenerate = !isLocked && (status === "intake_received" || status === "ai_ready" || status === "reviewed");
   const approvedOutput = outputs.find((o) => o.approved);
   const canSubmitMLS = !!approvedOutput && status === "reviewed" && !mlsSuccess;
 
@@ -218,7 +229,15 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
               {address_line1}
             </span>
           </div>
-          <StatusBadge status={status} />
+          <StatusBadge status={isLocked ? "submitted" : status} />
+          {isLocked && (
+            <span className="font-sans text-xs bg-ink text-gilt px-2 py-1 rounded">
+              🔒 Locked
+            </span>
+          )}
+          <span className="font-sans text-xs text-stone hidden sm:block">
+            {packagesUsed}/10 packages
+          </span>
         </div>
       </header>
 
@@ -373,7 +392,12 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
                 {/* Approval bar */}
                 <div className="flex items-center justify-between p-3 bg-white border border-stone/20 rounded-lg">
                   <div className="flex items-center gap-2">
-                    {currentOutput.approved ? (
+                    {currentOutput.locked ? (
+                      <>
+                        <span className="w-2 h-2 rounded-full bg-ink" />
+                        <span className="font-sans text-sm text-ink font-medium">🔒 Approved & Locked</span>
+                      </>
+                    ) : currentOutput.approved ? (
                       <>
                         <span className="w-2 h-2 rounded-full bg-emerald-500" />
                         <span className="font-sans text-sm text-emerald-700 font-medium">Approved</span>
@@ -381,18 +405,18 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
                     ) : (
                       <>
                         <span className="w-2 h-2 rounded-full bg-stone/30" />
-                        <span className="font-sans text-sm text-stone">Not yet approved</span>
+                        <span className="font-sans text-sm text-stone">Draft</span>
                       </>
                     )}
                     <span className="font-sans text-xs text-stone/50 ml-2">v{currentOutput.version}</span>
                   </div>
-                  {!currentOutput.approved && (
+                  {!currentOutput.locked && !isLocked && (
                     <button
-                      onClick={approveOutput}
+                      onClick={() => setShowConfirmModal(true)}
                       disabled={approving}
-                      className="px-3 py-1.5 bg-gilt text-ink font-sans text-xs font-medium rounded-md hover:bg-gilt/90 transition-colors disabled:opacity-60"
+                      className="px-4 py-2 bg-ink text-gilt font-sans text-xs font-medium rounded-md hover:bg-gilt hover:text-ink transition-colors disabled:opacity-60 tracking-wide"
                     >
-                      {approving ? "Approving…" : "Approve this version"}
+                      {approving ? "Approving…" : "Approve & Lock Listing"}
                     </button>
                   )}
                 </div>
@@ -477,6 +501,71 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
           </main>
         </div>
       </div>
+
+      {/* Usage meter */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-stone/20 px-6 py-3 flex items-center justify-between z-40">
+        <div className="flex items-center gap-3">
+          <span className="font-sans text-xs text-stone">Approved listing packages this month</span>
+          <div className="flex gap-1">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div
+                key={i}
+                className={`w-4 h-2 rounded-sm ${i < packagesUsed ? "bg-gilt" : "bg-stone/20"}`}
+              />
+            ))}
+          </div>
+          <span className="font-sans text-xs font-medium text-ink">{packagesUsed} / 10</span>
+        </div>
+        {packagesUsed >= 10 && (
+          <span className="font-sans text-xs text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded">
+            Additional packages $5 each
+          </span>
+        )}
+      </div>
+
+      {/* Confirmation modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-ink/60 flex items-center justify-center z-50 px-4">
+          <div className="bg-parchment max-w-md w-full p-8 space-y-6">
+            <div>
+              <h2 className="font-serif text-2xl text-ink mb-3">Approve this listing package?</h2>
+              <p className="font-sans text-sm text-stone leading-relaxed">
+                Once approved, this listing package will be <strong className="text-ink">locked</strong>, counted toward your monthly limit, and can no longer be edited or regenerated. To make changes after approval, you will need to create a new listing package.
+              </p>
+            </div>
+            <div className="bg-white border border-stone/20 p-4 space-y-2">
+              <div className="flex justify-between font-sans text-sm">
+                <span className="text-stone">Packages used this month</span>
+                <span className="text-ink font-medium">{packagesUsed} / 10</span>
+              </div>
+              <div className="flex justify-between font-sans text-sm">
+                <span className="text-stone">After approval</span>
+                <span className="text-gilt font-medium">{packagesUsed + 1} / 10</span>
+              </div>
+              {packagesUsed >= 10 && (
+                <div className="flex justify-between font-sans text-sm border-t border-stone/20 pt-2">
+                  <span className="text-stone">Additional package charge</span>
+                  <span className="text-ink font-medium">$5.00</span>
+                </div>
+              )}
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1 border border-stone/30 text-stone font-sans text-xs tracking-widest uppercase py-3 hover:border-ink hover:text-ink transition-colors"
+              >
+                Go Back to Editing
+              </button>
+              <button
+                onClick={approveOutput}
+                className="flex-1 bg-ink text-gilt font-sans text-xs tracking-widest uppercase py-3 hover:bg-gilt hover:text-ink transition-colors"
+              >
+                Approve & Lock Listing
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
