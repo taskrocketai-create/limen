@@ -49,6 +49,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
         intake_completed_at={m.intake_completed_at}
         mls_number={m.mls_number}
         listing_details={m.listing_details}
+        photos={[]}
         ai_outputs={m.ai_outputs}
       />
     );
@@ -88,10 +89,26 @@ export default async function ListingPage({ params }: ListingPageProps) {
     .eq("listing_id", params.id)
     .order("version", { ascending: false });
 
+  const { data: listing_assets } = await supabase
+    .from("listing_assets")
+    .select("id, storage_path, sort_order")
+    .eq("listing_id", params.id)
+    .eq("asset_type", "photo")
+    .order("sort_order", { ascending: true });
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  const photos = (listing_assets ?? []).map((a) => ({
+    id: a.id,
+    url: `${supabaseUrl}/storage/v1/object/public/listing-assets/${a.storage_path}`,
+    path: a.storage_path,
+    sort_order: a.sort_order,
+  }));
+
   return (
     <ListingOutputClient
       {...listing}
       listing_details={listing_details ?? null}
+      photos={photos}
       ai_outputs={(ai_outputs ?? []).map((o) => ({
         ...o,
         social_captions: parseSocialCaptions(o.social_captions),
