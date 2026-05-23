@@ -1,6 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import {
+  FacebookPreview,
+  InstagramPreview,
+  TikTokPreview,
+  TwitterPreview,
+  LinkedInPreview,
+  NextdoorPreview,
+} from "@/components/listings/output/SocialPreviews";
 
 interface MlsContent {
   description: string;
@@ -50,6 +58,7 @@ interface PlatformPanelProps {
   social_captions: SocialCaptions | null;
   platform_content: PlatformContent | null;
   photos: Photo[];
+  address: string;
 }
 
 function CopyButton({ text }: { text: string }) {
@@ -160,7 +169,7 @@ function PhotoStrip({ photos, max = 5, label }: { photos: Photo[]; max?: number;
   );
 }
 
-export default function PlatformPanel({ social_captions, platform_content, photos }: PlatformPanelProps) {
+export default function PlatformPanel({ social_captions, platform_content, photos, address }: PlatformPanelProps) {
   const [active, setActive] = useState<PlatformId | null>(null);
 
   const hasContent = (id: PlatformId) => {
@@ -265,10 +274,9 @@ export default function PlatformPanel({ social_captions, platform_content, photo
           {active === "facebook" && social_captions?.facebook && (
             <div className="space-y-5">
               <p className="font-sans text-xs text-stone bg-blue-50 border border-blue-200 rounded-md px-3 py-2">
-                Post to your Facebook page or Facebook Marketplace. Copy the text below and attach your listing photos.
+                Screenshot or download the preview below, then post directly to Facebook with your photos attached.
               </p>
-              <PhotoStrip photos={photos} max={5} label="Attach these photos to your post" />
-              <FieldBlock label="Facebook Post" text={social_captions.facebook} limit={63206} note="Works for Facebook page posts and Marketplace listings" />
+              <FacebookPreview caption={social_captions.facebook} photos={photos} address={address} />
             </div>
           )}
 
@@ -276,10 +284,9 @@ export default function PlatformPanel({ social_captions, platform_content, photo
           {active === "instagram" && social_captions?.instagram && (
             <div className="space-y-5">
               <p className="font-sans text-xs text-stone bg-pink-50 border border-pink-200 rounded-md px-3 py-2">
-                Post to Instagram with your best listing photo as the cover. Hashtags are included at the end.
+                Download the preview card below or copy the caption. Post to Instagram with your best photo as the cover.
               </p>
-              <PhotoStrip photos={photos} max={5} label="Use as your Instagram carousel" />
-              <FieldBlock label="Instagram Caption" text={social_captions.instagram} limit={2200} note="Includes hashtags — paste into Instagram caption field" />
+              <InstagramPreview caption={social_captions.instagram} photos={photos} address={address} />
             </div>
           )}
 
@@ -287,10 +294,9 @@ export default function PlatformPanel({ social_captions, platform_content, photo
           {active === "tiktok" && social_captions?.tiktok && (
             <div className="space-y-5">
               <p className="font-sans text-xs text-stone bg-stone/5 border border-stone/20 rounded-md px-3 py-2">
-                Use this script for a walking-tour video. Film yourself walking through the home and follow this narration.
+                Use this script for a walking-tour video. Download the thumbnail card to use as your TikTok cover image.
               </p>
-              <PhotoStrip photos={photos} max={5} label="Key rooms to film for your TikTok" />
-              <FieldBlock label="TikTok Video Script" text={social_captions.tiktok} note="60-90 second walking tour narration" />
+              <TikTokPreview caption={social_captions.tiktok} photos={photos} address={address} />
             </div>
           )}
 
@@ -298,10 +304,9 @@ export default function PlatformPanel({ social_captions, platform_content, photo
           {active === "linkedin" && social_captions?.linkedin && (
             <div className="space-y-5">
               <p className="font-sans text-xs text-stone bg-blue-50 border border-blue-200 rounded-md px-3 py-2">
-                Post to LinkedIn for professional network reach. Great for relocation buyers and investors.
+                Download the preview or copy the text. Post to LinkedIn for professional network reach.
               </p>
-              <PhotoStrip photos={photos.slice(0, 1)} max={1} label="Attach cover photo to LinkedIn post" />
-              <FieldBlock label="LinkedIn Post" text={social_captions.linkedin} limit={3000} note="Professional tone — attach listing photos or a virtual tour link" />
+              <LinkedInPreview caption={social_captions.linkedin} photos={photos} address={address} />
             </div>
           )}
 
@@ -309,10 +314,9 @@ export default function PlatformPanel({ social_captions, platform_content, photo
           {active === "nextdoor" && social_captions?.nextdoor && (
             <div className="space-y-5">
               <p className="font-sans text-xs text-stone bg-green-50 border border-green-200 rounded-md px-3 py-2">
-                Post in the neighborhood feed on Nextdoor. Hyper-local and highly effective for nearby buyers.
+                Download the preview or copy the text. Post in the For Sale section of your neighborhood feed.
               </p>
-              <PhotoStrip photos={photos.slice(0, 3)} max={3} label="Attach 1-3 photos to your Nextdoor post" />
-              <FieldBlock label="Nextdoor Post" text={social_captions.nextdoor} limit={1500} note="Post in the For Sale section of the listing's neighborhood" />
+              <NextdoorPreview caption={social_captions.nextdoor} photos={photos} address={address} />
             </div>
           )}
 
@@ -320,7 +324,7 @@ export default function PlatformPanel({ social_captions, platform_content, photo
           {active === "google" && platform_content?.google && (
             <div className="space-y-5">
               <p className="font-sans text-xs text-stone bg-stone/5 border border-stone/20 rounded-md px-3 py-2">
-                Post as a Google Business Profile update. Go to your Google Business dashboard → Add Update → What&apos;s New.
+                Go to your Google Business dashboard → Add Update → What&apos;s New. Paste the text and attach the cover photo.
               </p>
               <PhotoStrip photos={photos.slice(0, 1)} max={1} label="Attach cover photo to Google post" />
               <FieldBlock label="Google Business Post" text={platform_content.google.post} limit={1500} note="Appears in Google Search and Maps for your business" />
@@ -331,10 +335,9 @@ export default function PlatformPanel({ social_captions, platform_content, photo
           {active === "twitter" && social_captions?.twitter && (
             <div className="space-y-5">
               <p className="font-sans text-xs text-stone bg-stone/5 border border-stone/20 rounded-md px-3 py-2">
-                Post to X/Twitter. Keep it punchy — attach one hero photo for maximum engagement.
+                Download the preview card or copy the text. Attach your cover photo for maximum engagement.
               </p>
-              <PhotoStrip photos={photos.slice(0, 1)} max={1} label="Attach this hero photo to your tweet" />
-              <FieldBlock label="X / Twitter Post" text={social_captions.twitter} limit={280} note="Under 280 characters including address" />
+              <TwitterPreview caption={social_captions.twitter} photos={photos} address={address} />
             </div>
           )}
         </div>
