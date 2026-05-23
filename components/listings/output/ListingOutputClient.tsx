@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useTransition } from "react";
@@ -98,26 +97,7 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Social caption card
-// ---------------------------------------------------------------------------
-function SocialCard({ platform, caption }: { platform: string; caption: string }) {
-  const icons: Record<string, string> = { Instagram: "IG", Facebook: "FB", Twitter: "X" };
-  return (
-    <div className="border border-stone/20 rounded-md p-4 space-y-3 bg-white">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="w-6 h-6 rounded bg-ink text-gilt flex items-center justify-center font-sans text-[10px] font-bold flex-shrink-0">
-            {icons[platform]}
-          </span>
-          <span className="font-sans text-sm font-medium text-ink">{platform}</span>
-        </div>
-        <CopyButton text={caption} />
-      </div>
-      <p className="font-sans text-sm text-ink leading-relaxed whitespace-pre-wrap">{caption}</p>
-    </div>
-  );
-}
+
 
 // ---------------------------------------------------------------------------
 // Main component
