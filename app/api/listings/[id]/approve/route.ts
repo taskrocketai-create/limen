@@ -82,6 +82,6 @@ export async function POST(
   return NextResponse.json({ 
     ok: true, 
     packages_used: currentCount + 1,
-    packages_limit: 10,
+    packages_limit: 20,
   });
 }
