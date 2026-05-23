@@ -441,6 +441,7 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
                 <PlatformPanel
                   social_captions={currentOutput.social_captions}
                   platform_content={currentOutput.platform_content}
+                  photos={photos}
                 />
 
                 {/* MLS submission */}
