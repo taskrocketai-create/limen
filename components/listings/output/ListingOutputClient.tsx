@@ -5,6 +5,7 @@ import Link from "next/link";
 import Logo from "@/components/brand/Logo";
 import StatusBadge from "@/components/ui/StatusBadge";
 import PhotoUploader from "@/components/listings/output/PhotoUploader";
+import PlatformPanel from "@/components/listings/output/PlatformPanel";
 import type { ListingStatus, PropertyType } from "@/types/database";
 
 // ---------------------------------------------------------------------------
@@ -15,7 +16,20 @@ interface AiOutput {
   version: number;
   listing_description: string | null;
   headline_variants: string[] | null;
-  social_captions: { instagram?: string; facebook?: string; twitter?: string } | null;
+  social_captions: {
+    instagram?: string;
+    facebook?: string;
+    twitter?: string;
+    tiktok?: string;
+    linkedin?: string;
+    nextdoor?: string;
+  } | null;
+  platform_content: {
+    mls?: { description: string; agent_remarks: string; highlights: string[] };
+    zillow?: { description: string; highlights: string[]; what_i_love: string };
+    realtor_com?: { description: string; highlights: string[] };
+    google?: { post: string };
+  } | null;
   generated_at: string;
   approved: boolean;
   approved_at: string | null;
@@ -143,7 +157,11 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
         setGenerating(false);
         return;
       }
-      const newOutput: AiOutput = await res.json();
+      const data = await res.json();
+      const newOutput: AiOutput = {
+        ...data,
+        platform_content: data.platform_content ?? null,
+      };
       setOutputs((prev) => [newOutput, ...prev]);
       setActiveVersion(newOutput.id);
       setGenerating(false);
@@ -438,23 +456,11 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
                   </div>
                 )}
 
-                {/* Social studio */}
-                {currentOutput.social_captions && (
-                  <div className="space-y-3">
-                    <h3 className="font-display text-xl text-ink">Social studio</h3>
-                    <div className="space-y-3">
-                      {currentOutput.social_captions.instagram && (
-                        <SocialCard platform="Instagram" caption={currentOutput.social_captions.instagram} />
-                      )}
-                      {currentOutput.social_captions.facebook && (
-                        <SocialCard platform="Facebook" caption={currentOutput.social_captions.facebook} />
-                      )}
-                      {currentOutput.social_captions.twitter && (
-                        <SocialCard platform="Twitter" caption={currentOutput.social_captions.twitter} />
-                      )}
-                    </div>
-                  </div>
-                )}
+                {/* Platform publish panel */}
+                <PlatformPanel
+                  social_captions={currentOutput.social_captions}
+                  platform_content={currentOutput.platform_content}
+                />
 
                 {/* MLS submission */}
                 <div className="bg-white border border-stone/20 rounded-lg p-5 space-y-3">
