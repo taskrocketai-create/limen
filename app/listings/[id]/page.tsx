@@ -4,7 +4,14 @@ import ListingOutputClient from "@/components/listings/output/ListingOutputClien
 import { PREVIEW_MODE, MOCK_LISTING_DETAIL } from "@/utils/preview-data";
 import type { Json } from "@/types/database";
 
-type SocialCaptions = { instagram?: string; facebook?: string; twitter?: string } | null;
+type SocialCaptions = { instagram?: string; facebook?: string; twitter?: string; tiktok?: string; linkedin?: string; nextdoor?: string } | null;
+
+interface MlsContent { description: string; agent_remarks: string; highlights: string[] }
+interface ZillowContent { description: string; highlights: string[]; what_i_love: string }
+interface RealtorComContent { description: string; highlights: string[] }
+interface GoogleContent { post: string }
+type PlatformContent = { mls?: MlsContent; zillow?: ZillowContent; realtor_com?: RealtorComContent; google?: GoogleContent } | null;
+
 function parseSocialCaptions(raw: Json): SocialCaptions {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   const obj = raw as Record<string, unknown>;
@@ -12,6 +19,20 @@ function parseSocialCaptions(raw: Json): SocialCaptions {
     instagram: typeof obj.instagram === "string" ? obj.instagram : undefined,
     facebook: typeof obj.facebook === "string" ? obj.facebook : undefined,
     twitter: typeof obj.twitter === "string" ? obj.twitter : undefined,
+    tiktok: typeof obj.tiktok === "string" ? obj.tiktok : undefined,
+    linkedin: typeof obj.linkedin === "string" ? obj.linkedin : undefined,
+    nextdoor: typeof obj.nextdoor === "string" ? obj.nextdoor : undefined,
+  };
+}
+
+function parsePlatformContent(raw: Json): PlatformContent {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const obj = raw as Record<string, unknown>;
+  return {
+    mls: (obj.mls as MlsContent) ?? undefined,
+    zillow: (obj.zillow as ZillowContent) ?? undefined,
+    realtor_com: (obj.realtor_com as RealtorComContent) ?? undefined,
+    google: (obj.google as GoogleContent) ?? undefined,
   };
 }
 
@@ -50,7 +71,10 @@ export default async function ListingPage({ params }: ListingPageProps) {
         mls_number={m.mls_number}
         listing_details={m.listing_details}
         photos={[]}
-        ai_outputs={m.ai_outputs}
+        ai_outputs={m.ai_outputs.map((o: { id: string; version: number; listing_description: string; headline_variants: string[]; social_captions: { instagram: string; facebook: string; twitter: string }; generated_at: string; approved: boolean; approved_at: null }) => ({
+        ...o,
+        platform_content: null,
+      }))}
       />
     );
   }
@@ -112,6 +136,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
       ai_outputs={(ai_outputs ?? []).map((o) => ({
         ...o,
         social_captions: parseSocialCaptions(o.social_captions),
+        platform_content: parsePlatformContent(o.social_captions),
       }))}
     />
   );
