@@ -39,9 +39,17 @@ interface PlatformContent {
   google?: GoogleContent;
 }
 
+interface Photo {
+  id: string;
+  url: string;
+  path: string;
+  sort_order: number;
+}
+
 interface PlatformPanelProps {
   social_captions: SocialCaptions | null;
   platform_content: PlatformContent | null;
+  photos: Photo[];
 }
 
 function CopyButton({ text }: { text: string }) {
@@ -125,7 +133,34 @@ const PLATFORMS: { id: PlatformId; label: string; color: string; emoji: string }
   { id: "twitter", label: "X / Twitter", color: "bg-black text-white", emoji: "X" },
 ];
 
-export default function PlatformPanel({ social_captions, platform_content }: PlatformPanelProps) {
+function PhotoStrip({ photos, max = 5, label }: { photos: Photo[]; max?: number; label: string }) {
+  const shown = photos.slice(0, max);
+  if (shown.length === 0) return null;
+  return (
+    <div className="space-y-2">
+      <p className="font-sans text-xs font-medium text-stone uppercase tracking-wider">{label}</p>
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {shown.map((photo, i) => (
+          <div key={photo.id} className="relative flex-shrink-0 w-32 h-24 rounded-md overflow-hidden bg-parchment border border-stone/10">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={photo.url} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" />
+            {i === 0 && (
+              <span className="absolute top-1 left-1 px-1 py-0.5 bg-ink/70 text-gilt font-sans text-[9px] rounded">Cover</span>
+            )}
+          </div>
+        ))}
+        {photos.length > max && (
+          <div className="flex-shrink-0 w-32 h-24 rounded-md bg-parchment border border-stone/10 flex items-center justify-center">
+            <span className="font-sans text-sm text-stone">+{photos.length - max} more</span>
+          </div>
+        )}
+      </div>
+      <p className="font-sans text-xs text-stone/50">Attach these photos when posting</p>
+    </div>
+  );
+}
+
+export default function PlatformPanel({ social_captions, platform_content, photos }: PlatformPanelProps) {
   const [active, setActive] = useState<PlatformId | null>(null);
 
   const hasContent = (id: PlatformId) => {
@@ -194,18 +229,9 @@ export default function PlatformPanel({ social_captions, platform_content }: Pla
               <p className="font-sans text-xs text-stone bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
                 Copy each field and paste directly into your MLS system. Never auto-submits — always requires your review.
               </p>
-              <FieldBlock
-                label="Public Description"
-                text={platform_content.mls.description}
-                limit={500}
-                note="Shown to buyers on all MLS-connected sites"
-              />
-              <FieldBlock
-                label="Agent Remarks"
-                text={platform_content.mls.agent_remarks}
-                limit={200}
-                note="Visible to agents only — showing instructions, offers, etc."
-              />
+              <PhotoStrip photos={photos} max={5} label="Photos to attach" />
+              <FieldBlock label="Public Description" text={platform_content.mls.description} limit={500} note="Shown to buyers on all MLS-connected sites" />
+              <FieldBlock label="Agent Remarks" text={platform_content.mls.agent_remarks} limit={200} note="Visible to agents only — showing instructions, offers, etc." />
               <BulletList label="Key Highlights" items={platform_content.mls.highlights} />
             </div>
           )}
@@ -216,19 +242,10 @@ export default function PlatformPanel({ social_captions, platform_content }: Pla
               <p className="font-sans text-xs text-stone bg-blue-50 border border-blue-200 rounded-md px-3 py-2">
                 Go to Zillow → My Listings → Edit listing. Copy each field below into the matching section.
               </p>
-              <FieldBlock
-                label="Property Description"
-                text={platform_content.zillow.description}
-                limit={2500}
-                note="Paste into Zillow's 'Description' field"
-              />
+              <PhotoStrip photos={photos} max={5} label="Photos to upload to Zillow" />
+              <FieldBlock label="Property Description" text={platform_content.zillow.description} limit={2500} note="Paste into Zillow's 'Description' field" />
               <BulletList label="Home Highlights" items={platform_content.zillow.highlights} />
-              <FieldBlock
-                label="What I Love About This Home"
-                text={platform_content.zillow.what_i_love}
-                limit={500}
-                note="Seller perspective — paste into Zillow's 'What I Love' section"
-              />
+              <FieldBlock label="What I Love About This Home" text={platform_content.zillow.what_i_love} limit={500} note="Seller perspective — paste into Zillow's 'What I Love' section" />
             </div>
           )}
 
@@ -238,12 +255,8 @@ export default function PlatformPanel({ social_captions, platform_content }: Pla
               <p className="font-sans text-xs text-stone bg-red-50 border border-red-200 rounded-md px-3 py-2">
                 Go to Realtor.com → Manage Listings → Edit. Paste the description and highlights below.
               </p>
-              <FieldBlock
-                label="Property Description"
-                text={platform_content.realtor_com.description}
-                limit={3000}
-                note="Paste into Realtor.com's description field"
-              />
+              <PhotoStrip photos={photos} max={5} label="Photos to upload to Realtor.com" />
+              <FieldBlock label="Property Description" text={platform_content.realtor_com.description} limit={3000} note="Paste into Realtor.com's description field" />
               <BulletList label="Key Features" items={platform_content.realtor_com.highlights} />
             </div>
           )}
@@ -254,12 +267,8 @@ export default function PlatformPanel({ social_captions, platform_content }: Pla
               <p className="font-sans text-xs text-stone bg-blue-50 border border-blue-200 rounded-md px-3 py-2">
                 Post to your Facebook page or Facebook Marketplace. Copy the text below and attach your listing photos.
               </p>
-              <FieldBlock
-                label="Facebook Post"
-                text={social_captions.facebook}
-                limit={63206}
-                note="Works for Facebook page posts and Marketplace listings"
-              />
+              <PhotoStrip photos={photos} max={5} label="Attach these photos to your post" />
+              <FieldBlock label="Facebook Post" text={social_captions.facebook} limit={63206} note="Works for Facebook page posts and Marketplace listings" />
             </div>
           )}
 
@@ -269,12 +278,8 @@ export default function PlatformPanel({ social_captions, platform_content }: Pla
               <p className="font-sans text-xs text-stone bg-pink-50 border border-pink-200 rounded-md px-3 py-2">
                 Post to Instagram with your best listing photo as the cover. Hashtags are included at the end.
               </p>
-              <FieldBlock
-                label="Instagram Caption"
-                text={social_captions.instagram}
-                limit={2200}
-                note="Includes hashtags — paste into Instagram caption field"
-              />
+              <PhotoStrip photos={photos} max={5} label="Use as your Instagram carousel" />
+              <FieldBlock label="Instagram Caption" text={social_captions.instagram} limit={2200} note="Includes hashtags — paste into Instagram caption field" />
             </div>
           )}
 
@@ -284,11 +289,8 @@ export default function PlatformPanel({ social_captions, platform_content }: Pla
               <p className="font-sans text-xs text-stone bg-stone/5 border border-stone/20 rounded-md px-3 py-2">
                 Use this script for a walking-tour video. Film yourself walking through the home and follow this narration.
               </p>
-              <FieldBlock
-                label="TikTok Video Script"
-                text={social_captions.tiktok}
-                note="60-90 second walking tour narration"
-              />
+              <PhotoStrip photos={photos} max={5} label="Key rooms to film for your TikTok" />
+              <FieldBlock label="TikTok Video Script" text={social_captions.tiktok} note="60-90 second walking tour narration" />
             </div>
           )}
 
@@ -298,12 +300,8 @@ export default function PlatformPanel({ social_captions, platform_content }: Pla
               <p className="font-sans text-xs text-stone bg-blue-50 border border-blue-200 rounded-md px-3 py-2">
                 Post to LinkedIn for professional network reach. Great for relocation buyers and investors.
               </p>
-              <FieldBlock
-                label="LinkedIn Post"
-                text={social_captions.linkedin}
-                limit={3000}
-                note="Professional tone — attach listing photos or a virtual tour link"
-              />
+              <PhotoStrip photos={photos.slice(0, 1)} max={1} label="Attach cover photo to LinkedIn post" />
+              <FieldBlock label="LinkedIn Post" text={social_captions.linkedin} limit={3000} note="Professional tone — attach listing photos or a virtual tour link" />
             </div>
           )}
 
@@ -313,12 +311,8 @@ export default function PlatformPanel({ social_captions, platform_content }: Pla
               <p className="font-sans text-xs text-stone bg-green-50 border border-green-200 rounded-md px-3 py-2">
                 Post in the neighborhood feed on Nextdoor. Hyper-local and highly effective for nearby buyers.
               </p>
-              <FieldBlock
-                label="Nextdoor Post"
-                text={social_captions.nextdoor}
-                limit={1500}
-                note="Post in the For Sale section of the listing's neighborhood"
-              />
+              <PhotoStrip photos={photos.slice(0, 3)} max={3} label="Attach 1-3 photos to your Nextdoor post" />
+              <FieldBlock label="Nextdoor Post" text={social_captions.nextdoor} limit={1500} note="Post in the For Sale section of the listing's neighborhood" />
             </div>
           )}
 
@@ -328,12 +322,8 @@ export default function PlatformPanel({ social_captions, platform_content }: Pla
               <p className="font-sans text-xs text-stone bg-stone/5 border border-stone/20 rounded-md px-3 py-2">
                 Post as a Google Business Profile update. Go to your Google Business dashboard → Add Update → What&apos;s New.
               </p>
-              <FieldBlock
-                label="Google Business Post"
-                text={platform_content.google.post}
-                limit={1500}
-                note="Appears in Google Search and Maps for your business"
-              />
+              <PhotoStrip photos={photos.slice(0, 1)} max={1} label="Attach cover photo to Google post" />
+              <FieldBlock label="Google Business Post" text={platform_content.google.post} limit={1500} note="Appears in Google Search and Maps for your business" />
             </div>
           )}
 
@@ -343,12 +333,8 @@ export default function PlatformPanel({ social_captions, platform_content }: Pla
               <p className="font-sans text-xs text-stone bg-stone/5 border border-stone/20 rounded-md px-3 py-2">
                 Post to X/Twitter. Keep it punchy — attach one hero photo for maximum engagement.
               </p>
-              <FieldBlock
-                label="X / Twitter Post"
-                text={social_captions.twitter}
-                limit={280}
-                note="Under 280 characters including address"
-              />
+              <PhotoStrip photos={photos.slice(0, 1)} max={1} label="Attach this hero photo to your tweet" />
+              <FieldBlock label="X / Twitter Post" text={social_captions.twitter} limit={280} note="Under 280 characters including address" />
             </div>
           )}
         </div>
