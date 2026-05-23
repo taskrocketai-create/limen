@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import Link from 'next/link';
+import AgencyPanel from '@/components/agency/AgencyPanel';
 
 interface Profile {
   full_name: string;
@@ -13,7 +14,7 @@ interface Profile {
 export default function SettingsPage() {
   const supabase = createClient();
   const [userEmail, setUserEmail] = useState<string>('');
-const [, setUserId] = useState<string>('');
+  const [userId, setUserId] = useState<string>('');
   const [profile, setProfile] = useState<Profile>({ full_name: '', brokerage: '', phone: '' });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -113,6 +114,11 @@ const [, setUserId] = useState<string>('');
             </button>
           </div>
         </section>
+
+        {/* Agency */}
+        {userId && (
+          <AgencyPanel userId={userId} />
+        )}
 
         {/* Billing */}
         <section className="bg-white border border-[#E8E4DC] p-8 mb-6">
