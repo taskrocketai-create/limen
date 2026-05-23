@@ -472,6 +472,7 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
                   social_captions={currentOutput.social_captions}
                   platform_content={currentOutput.platform_content}
                   photos={photos}
+                  address={`${address_line1}, ${city}, ${state} ${zip}`}
                 />
 
                 {/* MLS submission */}
