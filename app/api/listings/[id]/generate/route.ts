@@ -211,26 +211,18 @@ export async function POST(
     );
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const insertData: any = {
-    listing_id: params.id,
-    version: nextVersion,
-    listing_description: parsed.listing_description,
-    headline_variants: parsed.headline_variants,
-    social_captions: parsed.social_captions,
-    platform_content: parsed.platform_content,
-  };
-
   const { data: newOutput, error: insertError } = await supabase
     .from("ai_outputs")
-    .insert(insertData)
-    .select("id, version, listing_description, headline_variants, social_captions, generated_at, approved, approved_at")
+    .insert({
+      listing_id: params.id,
+      version: nextVersion,
+      listing_description: parsed.listing_description,
+      headline_variants: parsed.headline_variants,
+      social_captions: parsed.social_captions,
+      platform_content: parsed.platform_content,
+    })
+    .select("id, version, listing_description, headline_variants, social_captions, platform_content, generated_at, approved, approved_at")
     .single();
-
-  if (insertError || !newOutput) {
-    console.error("ai_outputs insert error:", insertError);
-    return NextResponse.json({ error: "Failed to save output." }, { status: 500 });
-  }
 
   if (listing.status === "intake_received") {
     await supabase
