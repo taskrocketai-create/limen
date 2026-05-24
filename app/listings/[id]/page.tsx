@@ -81,6 +81,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
         platform_content: null,
         locked: false,
         locked_at: null,
+        compliance_notes: null,
       }))}
       />
     );
@@ -185,6 +186,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
         platform_content: parsePlatformContent(o.platform_content),
         locked: (o as { locked?: boolean }).locked ?? false,
         locked_at: (o as { locked_at?: string | null }).locked_at ?? null,
+        compliance_notes: (o as { compliance_notes?: string | null }).compliance_notes ?? null,
       }))}
     />
   );
