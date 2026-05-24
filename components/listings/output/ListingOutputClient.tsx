@@ -7,7 +7,6 @@ import StatusBadge from "@/components/ui/StatusBadge";
 import PhotoUploader from "@/components/listings/output/PhotoUploader";
 import PlatformPanel from "@/components/listings/output/PlatformPanel";
 import StyleSelector, { type ListingStyle } from "@/components/listings/output/StyleSelector";
-import ComplianceCheck from "@/components/listings/output/ComplianceCheck";
 import type { ListingStatus, PropertyType } from "@/types/database";
 
 // ---------------------------------------------------------------------------
@@ -37,14 +36,7 @@ interface AiOutput {
   approved_at: string | null;
   locked: boolean;
   locked_at: string | null;
-  compliance_check?: {
-    status: "ready" | "review" | "violation";
-    summary: string;
-    fair_housing: { passed: boolean; issues: { text: string; issue: string; severity?: "warning" | "violation"; suggestion?: string }[] };
-    unsupported_claims: { passed: boolean; issues: { text: string; issue: string; suggestion?: string }[] };
-    missing_facts: { passed: boolean; issues: { text: string; issue: string }[] };
-    platform_completeness: { passed: boolean; issues: { text: string; issue: string }[]; missing?: string[] };
-  } | null;
+  compliance_notes?: string | null;
 }
 
 interface ListingDetail {
@@ -138,7 +130,6 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
     social_style: "",
     notes: "",
   });
-  const [complianceStatus, setComplianceStatus] = useState<"ready" | "review" | "violation" | null>(null);
   const [activeVersion, setActiveVersion] = useState<string | null>(
     ai_outputs.length > 0 ? ai_outputs[0].id : null
   );
@@ -155,7 +146,6 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
   function generateCopy() {
     setGenerating(true);
     setGenError("");
-    setComplianceStatus(null);
     startTransition(async () => {
       const res = await fetch(`/api/listings/${id}/generate`, {
         method: "POST",
@@ -174,7 +164,7 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
         platform_content: data.platform_content ?? null,
         locked: false,
         locked_at: null,
-        compliance_check: null,
+        compliance_notes: data.compliance_notes ?? null,
       };
       setOutputs((prev) => [newOutput, ...prev]);
       setActiveVersion(newOutput.id);
@@ -419,7 +409,7 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
                     <select
                       className="font-sans text-xs text-stone border border-stone/20 rounded px-2 py-1.5 focus:outline-none focus:border-gilt bg-white"
                       value={activeVersion ?? ""}
-                      onChange={(e) => { setActiveVersion(e.target.value); setComplianceStatus(null); }}
+                      onChange={(e) => { setActiveVersion(e.target.value); }}
                     >
                       {outputs.map((o) => (
                         <option key={o.id} value={o.id}>
@@ -430,21 +420,15 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
                   </div>
                 )}
 
-                {/* Compliance check — show before approve */}
-                {!currentOutput.locked && (
-                  <ComplianceCheck
-                    listingId={id}
-                    outputId={currentOutput.id}
-                    content={[
-                      currentOutput.listing_description ?? "",
-                      currentOutput.headline_variants?.join(" ") ?? "",
-                      currentOutput.social_captions?.instagram ?? "",
-                      currentOutput.social_captions?.facebook ?? "",
-                      currentOutput.social_captions?.nextdoor ?? "",
-                    ].filter(Boolean).join("\n\n")}
-                    onResult={setComplianceStatus}
-                    initialResult={currentOutput.compliance_check}
-                  />
+                {/* Compliance badge — shown when copy is generated */}
+                {!currentOutput.locked && currentOutput.compliance_notes && (
+                  <div className="flex items-start gap-3 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3">
+                    <span className="text-emerald-600 text-lg flex-shrink-0">🏠</span>
+                    <div>
+                      <p className="font-sans text-xs font-medium text-emerald-800">Fair Housing Reviewed</p>
+                      <p className="font-sans text-xs text-emerald-700 mt-0.5">{currentOutput.compliance_notes}</p>
+                    </div>
+                  </div>
                 )}
 
                 {/* Approval bar */}
@@ -469,21 +453,13 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
                     <span className="font-sans text-xs text-stone/50 ml-2">v{currentOutput.version}</span>
                   </div>
                   {!currentOutput.locked && !isLocked && (
-                    <div className="flex items-center gap-2">
-                      {complianceStatus === "violation" && (
-                        <span className="font-sans text-xs text-red-600">Fix violations before approving</span>
-                      )}
-                      {!complianceStatus && (
-                        <span className="font-sans text-xs text-stone/60">Run compliance check first</span>
-                      )}
-                      <button
-                        onClick={() => setShowConfirmModal(true)}
-                        disabled={approving || complianceStatus === "violation" || !complianceStatus}
-                        className="px-4 py-2 bg-ink text-gilt font-sans text-xs font-medium rounded-md hover:bg-gilt hover:text-ink transition-colors disabled:opacity-40 disabled:cursor-not-allowed tracking-wide"
-                      >
-                        {approving ? "Approving…" : "Approve & Lock Listing"}
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => setShowConfirmModal(true)}
+                      disabled={approving}
+                      className="px-4 py-2 bg-ink text-gilt font-sans text-xs font-medium rounded-md hover:bg-gilt hover:text-ink transition-colors disabled:opacity-60 tracking-wide"
+                    >
+                      {approving ? "Approving…" : "Approve & Lock Listing"}
+                    </button>
                   )}
                 </div>
 
@@ -583,11 +559,16 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
           </div>
           <span className="font-sans text-xs font-medium text-ink">{packagesUsed} / 20</span>
         </div>
-        {packagesUsed >= 20 && (
-          <span className="font-sans text-xs text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded">
-            Additional packages $5 each
-          </span>
-        )}
+        <div className="flex items-center gap-4">
+          {packagesUsed >= 20 && (
+            <span className="font-sans text-xs text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded">
+              Additional packages $5 each
+            </span>
+          )}
+          <Link href="/disclaimer" className="font-sans text-xs text-stone/40 hover:text-stone transition-colors">
+            Disclaimer & Legal
+          </Link>
+        </div>
       </div>
 
       {/* Confirmation modal */}
@@ -601,16 +582,6 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
               </p>
             </div>
             <div className="bg-white border border-stone/20 p-4 space-y-2">
-              {complianceStatus === "ready" && (
-                <div className="flex items-center gap-2 text-emerald-700 font-sans text-sm pb-2 border-b border-stone/10">
-                  <span>✓</span><span>Compliance check passed</span>
-                </div>
-              )}
-              {complianceStatus === "review" && (
-                <div className="flex items-center gap-2 text-amber-700 font-sans text-sm pb-2 border-b border-stone/10">
-                  <span>⚠</span><span>Review warnings noted — you are approving anyway</span>
-                </div>
-              )}
               <div className="flex justify-between font-sans text-sm">
                 <span className="text-stone">Packages used this month</span>
                 <span className="text-ink font-medium">{packagesUsed} / 20</span>
