@@ -132,7 +132,7 @@ function QRCodeDisplay({ url, address, date, startTime, endTime }: {
   );
 }
 
-export default function OpenHousePanel({ listingId, address }: OpenHousePanelProps) {
+export default function OpenHousePanel({ listingId, address: _address }: OpenHousePanelProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState<OpenHousePackage | null>(null);
