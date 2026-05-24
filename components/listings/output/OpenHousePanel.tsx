@@ -1,6 +1,19 @@
 "use client";
 
 import { useState, useRef } from "react";
+import {
+  OpenHouseSocialCard,
+  OpenHouseFlyerCard,
+  OpenHouseSignInCard,
+  OpenHouseDisplayCard,
+} from "@/components/listings/output/OpenHouseVisuals";
+
+interface Photo {
+  id: string;
+  url: string;
+  path: string;
+  sort_order: number;
+}
 
 interface OpenHouseMeta {
   address: string;
@@ -29,6 +42,7 @@ interface OpenHousePackage {
 interface OpenHousePanelProps {
   listingId: string;
   address: string;
+  photos: Photo[];
 }
 
 function CopyButton({ text }: { text: string }) {
@@ -132,18 +146,19 @@ function QRCodeDisplay({ url, date, startTime, endTime }: {
   );
 }
 
-export default function OpenHousePanel({ listingId, address }: OpenHousePanelProps) {
+export default function OpenHousePanel({ listingId, address, photos }: OpenHousePanelProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState<OpenHousePackage | null>(null);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState("social");
+  const [activeTab, setActiveTab] = useState("visuals");
 
   // Form state
   const [date, setDate] = useState("");
   const [startTime, setStartTime] = useState("1:00 PM");
   const [endTime, setEndTime] = useState("3:00 PM");
   const [notes, setNotes] = useState("");
+  const [tone, setTone] = useState("warm_inviting");
 
   const handleGenerate = async () => {
     if (!date || !startTime || !endTime) return;
@@ -153,7 +168,7 @@ export default function OpenHousePanel({ listingId, address }: OpenHousePanelPro
       const res = await fetch(`/api/listings/${listingId}/open-house`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date, start_time: startTime, end_time: endTime, notes, address }),
+        body: JSON.stringify({ date, start_time: startTime, end_time: endTime, notes, address, tone }),
       });
       if (!res.ok) {
         const b = await res.json().catch(() => ({}));
@@ -162,7 +177,7 @@ export default function OpenHousePanel({ listingId, address }: OpenHousePanelPro
       }
       const data = await res.json();
       setResult(data);
-      setActiveTab("social");
+      setActiveTab("visuals");
     } catch {
       setError("Generation failed. Please try again.");
     } finally {
@@ -171,6 +186,7 @@ export default function OpenHousePanel({ listingId, address }: OpenHousePanelPro
   };
 
   const TABS = [
+    { id: "visuals", label: "Visual Cards" },
     { id: "social", label: "Social" },
     { id: "email", label: "Email & Text" },
     { id: "onsite", label: "On-site" },
@@ -231,6 +247,21 @@ export default function OpenHousePanel({ listingId, address }: OpenHousePanelPro
                 </div>
               </div>
               <div className="space-y-1">
+                <label className="font-sans text-xs tracking-widest uppercase text-stone">Style / Tone</label>
+                <select
+                  value={tone}
+                  onChange={e => setTone(e.target.value)}
+                  className="w-full border border-stone/20 px-3 py-2 font-sans text-sm text-ink focus:outline-none focus:border-gilt rounded-md bg-white"
+                >
+                  <option value="warm_inviting">Warm & Inviting</option>
+                  <option value="clean_professional">Clean & Professional</option>
+                  <option value="luxury_elevated">Luxury / Elevated</option>
+                  <option value="modern_minimal">Modern & Minimal</option>
+                  <option value="local_southern_charm">Local Southern Charm</option>
+                  <option value="investor_practical">Investor / Practical</option>
+                </select>
+              </div>
+              <div className="space-y-1">
                 <label className="font-sans text-xs tracking-widest uppercase text-stone">
                   Notes <span className="normal-case tracking-normal text-stone/50">(optional — refreshments, parking, etc.)</span>
                 </label>
@@ -287,6 +318,56 @@ export default function OpenHousePanel({ listingId, address }: OpenHousePanelPro
                   </button>
                 ))}
               </div>
+
+              {/* Visuals tab */}
+              {activeTab === "visuals" && (
+                <div className="space-y-8">
+                  <OpenHouseSocialCard
+                    address={result.meta.address}
+                    date={result.meta.date}
+                    startTime={result.meta.start_time}
+                    endTime={result.meta.end_time}
+                    price={result.meta.price}
+                    specs={result.meta.specs}
+                    photos={photos}
+                    listingUrl={result.meta.listing_url}
+                    tone={tone}
+                  />
+                  <OpenHouseFlyerCard
+                    address={result.meta.address}
+                    date={result.meta.date}
+                    startTime={result.meta.start_time}
+                    endTime={result.meta.end_time}
+                    price={result.meta.price}
+                    specs={result.meta.specs}
+                    photos={photos}
+                    listingUrl={result.meta.listing_url}
+                    tone={tone}
+                  />
+                  <OpenHouseSignInCard
+                    address={result.meta.address}
+                    date={result.meta.date}
+                    startTime={result.meta.start_time}
+                    endTime={result.meta.end_time}
+                    price={result.meta.price}
+                    specs={result.meta.specs}
+                    photos={photos}
+                    listingUrl={result.meta.listing_url}
+                    tone={tone}
+                  />
+                  <OpenHouseDisplayCard
+                    address={result.meta.address}
+                    date={result.meta.date}
+                    startTime={result.meta.start_time}
+                    endTime={result.meta.end_time}
+                    price={result.meta.price}
+                    specs={result.meta.specs}
+                    photos={photos}
+                    listingUrl={result.meta.listing_url}
+                    tone={tone}
+                  />
+                </div>
+              )}
 
               {/* Social tab */}
               {activeTab === "social" && (
