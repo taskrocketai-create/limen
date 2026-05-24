@@ -45,7 +45,7 @@ interface StyleSelectorProps {
 }
 
 function OptionCard({
-  id, label, desc, selected, onClick
+  label, desc, selected, onClick
 }: {
   id: string; label: string; desc: string; selected: boolean; onClick: () => void;
 }) {
@@ -163,4 +163,3 @@ export default function StyleSelector({ value, onChange, onGenerate, generating,
     </div>
   );
 }
-
