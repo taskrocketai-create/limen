@@ -125,7 +125,7 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
     listing_locked, packages_used: initialPackagesUsed,
   } = props;
 
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const [outputs, setOutputs] = useState<AiOutput[]>(ai_outputs);
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState("");
