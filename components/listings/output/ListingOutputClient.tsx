@@ -6,6 +6,8 @@ import Logo from "@/components/brand/Logo";
 import StatusBadge from "@/components/ui/StatusBadge";
 import PhotoUploader from "@/components/listings/output/PhotoUploader";
 import PlatformPanel from "@/components/listings/output/PlatformPanel";
+import StyleSelector, { type ListingStyle } from "@/components/listings/output/StyleSelector";
+import ComplianceCheck from "@/components/listings/output/ComplianceCheck";
 import type { ListingStatus, PropertyType } from "@/types/database";
 
 // ---------------------------------------------------------------------------
@@ -35,6 +37,14 @@ interface AiOutput {
   approved_at: string | null;
   locked: boolean;
   locked_at: string | null;
+  compliance_check?: {
+    status: "ready" | "review" | "violation";
+    summary: string;
+    fair_housing: { passed: boolean; issues: { text: string; issue: string; severity?: "warning" | "violation"; suggestion?: string }[] };
+    unsupported_claims: { passed: boolean; issues: { text: string; issue: string; suggestion?: string }[] };
+    missing_facts: { passed: boolean; issues: { text: string; issue: string }[] };
+    platform_completeness: { passed: boolean; issues: { text: string; issue: string }[]; missing?: string[] };
+  } | null;
 }
 
 interface ListingDetail {
@@ -122,6 +132,13 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [packagesUsed, setPackagesUsed] = useState(initialPackagesUsed);
   const isLocked = listing_locked;
+  const [listingStyle, setListingStyle] = useState<ListingStyle>({
+    tone: "",
+    launch_angle: "",
+    social_style: "",
+    notes: "",
+  });
+  const [complianceStatus, setComplianceStatus] = useState<"ready" | "review" | "violation" | null>(null);
   const [activeVersion, setActiveVersion] = useState<string | null>(
     ai_outputs.length > 0 ? ai_outputs[0].id : null
   );
@@ -138,8 +155,13 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
   function generateCopy() {
     setGenerating(true);
     setGenError("");
+    setComplianceStatus(null);
     startTransition(async () => {
-      const res = await fetch(`/api/listings/${id}/generate`, { method: "POST" });
+      const res = await fetch(`/api/listings/${id}/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ style: listingStyle }),
+      });
       if (!res.ok) {
         const b = await res.json().catch(() => ({}));
         setGenError(b.error ?? "Generation failed. Please try again.");
@@ -150,6 +172,9 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
       const newOutput: AiOutput = {
         ...data,
         platform_content: data.platform_content ?? null,
+        locked: false,
+        locked_at: null,
+        compliance_check: null,
       };
       setOutputs((prev) => [newOutput, ...prev]);
       setActiveVersion(newOutput.id);
@@ -339,38 +364,29 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
           {/* ── RIGHT: AI output + social studio ── */}
           <main className="lg:col-span-2 space-y-6">
 
-            {/* Generate button / state */}
-            <div className="flex items-center justify-between flex-wrap gap-3">
-              <h2 className="font-display text-3xl text-ink">Listing copy</h2>
-              <div className="flex items-center gap-3">
-                {outputs.length > 1 && (
-                  <select
-                    className="font-sans text-xs text-stone border border-stone/20 rounded px-2 py-1.5 focus:outline-none focus:border-gilt bg-white"
-                    value={activeVersion ?? ""}
-                    onChange={(e) => setActiveVersion(e.target.value)}
-                  >
-                    {outputs.map((o) => (
-                      <option key={o.id} value={o.id}>
-                        v{o.version}{o.approved ? " ✓ Approved" : ""}
-                      </option>
-                    ))}
-                  </select>
-                )}
-                {isLocked ? (
-                  <span className="font-sans text-xs text-stone bg-parchment border border-stone/20 px-4 py-2 rounded-md">
-                    🔒 Locked — create a Refresh Package to make changes
-                  </span>
-                ) : (
-                  <button
-                    onClick={generateCopy}
-                    disabled={generating || isPending || !canGenerate}
-                    className="px-4 py-2 bg-ink text-gilt font-sans text-sm font-medium rounded-md hover:bg-midnight transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {generating ? "Generating…" : outputs.length > 0 ? "Regenerate" : "Generate copy"}
-                  </button>
-                )}
+            {/* Style selector + generate */}
+            {!isLocked && canGenerate && (
+              <StyleSelector
+                value={listingStyle}
+                onChange={setListingStyle}
+                onGenerate={generateCopy}
+                generating={generating}
+                hasOutputs={outputs.length > 0}
+              />
+            )}
+
+            {isLocked && (
+              <div className="flex items-center justify-between">
+                <h2 className="font-display text-3xl text-ink">Listing copy</h2>
+                <span className="font-sans text-xs text-stone bg-parchment border border-stone/20 px-4 py-2 rounded-md">
+                  🔒 Locked — create a Refresh Package to make changes
+                </span>
               </div>
-            </div>
+            )}
+
+            {!isLocked && !canGenerate && (
+              <h2 className="font-display text-3xl text-ink">Listing copy</h2>
+            )}
 
             {genError && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-md">
@@ -395,6 +411,42 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
             {/* AI output */}
             {currentOutput && (
               <div className="space-y-5">
+
+                {/* Version selector */}
+                {outputs.length > 1 && (
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-display text-xl text-ink">Listing copy</h3>
+                    <select
+                      className="font-sans text-xs text-stone border border-stone/20 rounded px-2 py-1.5 focus:outline-none focus:border-gilt bg-white"
+                      value={activeVersion ?? ""}
+                      onChange={(e) => { setActiveVersion(e.target.value); setComplianceStatus(null); }}
+                    >
+                      {outputs.map((o) => (
+                        <option key={o.id} value={o.id}>
+                          v{o.version}{o.approved ? " ✓ Approved" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Compliance check — show before approve */}
+                {!currentOutput.locked && (
+                  <ComplianceCheck
+                    listingId={id}
+                    outputId={currentOutput.id}
+                    content={[
+                      currentOutput.listing_description ?? "",
+                      currentOutput.headline_variants?.join(" ") ?? "",
+                      currentOutput.social_captions?.instagram ?? "",
+                      currentOutput.social_captions?.facebook ?? "",
+                      currentOutput.social_captions?.nextdoor ?? "",
+                    ].filter(Boolean).join("\n\n")}
+                    onResult={setComplianceStatus}
+                    initialResult={currentOutput.compliance_check}
+                  />
+                )}
+
                 {/* Approval bar */}
                 <div className="flex items-center justify-between p-3 bg-white border border-stone/20 rounded-lg">
                   <div className="flex items-center gap-2">
@@ -417,13 +469,21 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
                     <span className="font-sans text-xs text-stone/50 ml-2">v{currentOutput.version}</span>
                   </div>
                   {!currentOutput.locked && !isLocked && (
-                    <button
-                      onClick={() => setShowConfirmModal(true)}
-                      disabled={approving}
-                      className="px-4 py-2 bg-ink text-gilt font-sans text-xs font-medium rounded-md hover:bg-gilt hover:text-ink transition-colors disabled:opacity-60 tracking-wide"
-                    >
-                      {approving ? "Approving…" : "Approve & Lock Listing"}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {complianceStatus === "violation" && (
+                        <span className="font-sans text-xs text-red-600">Fix violations before approving</span>
+                      )}
+                      {!complianceStatus && (
+                        <span className="font-sans text-xs text-stone/60">Run compliance check first</span>
+                      )}
+                      <button
+                        onClick={() => setShowConfirmModal(true)}
+                        disabled={approving || complianceStatus === "violation" || !complianceStatus}
+                        className="px-4 py-2 bg-ink text-gilt font-sans text-xs font-medium rounded-md hover:bg-gilt hover:text-ink transition-colors disabled:opacity-40 disabled:cursor-not-allowed tracking-wide"
+                      >
+                        {approving ? "Approving…" : "Approve & Lock Listing"}
+                      </button>
+                    </div>
                   )}
                 </div>
 
@@ -541,6 +601,16 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
               </p>
             </div>
             <div className="bg-white border border-stone/20 p-4 space-y-2">
+              {complianceStatus === "ready" && (
+                <div className="flex items-center gap-2 text-emerald-700 font-sans text-sm pb-2 border-b border-stone/10">
+                  <span>✓</span><span>Compliance check passed</span>
+                </div>
+              )}
+              {complianceStatus === "review" && (
+                <div className="flex items-center gap-2 text-amber-700 font-sans text-sm pb-2 border-b border-stone/10">
+                  <span>⚠</span><span>Review warnings noted — you are approving anyway</span>
+                </div>
+              )}
               <div className="flex justify-between font-sans text-sm">
                 <span className="text-stone">Packages used this month</span>
                 <span className="text-ink font-medium">{packagesUsed} / 20</span>
