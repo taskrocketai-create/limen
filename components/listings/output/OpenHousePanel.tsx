@@ -153,7 +153,7 @@ export default function OpenHousePanel({ listingId, address }: OpenHousePanelPro
       const res = await fetch(`/api/listings/${listingId}/open-house`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date, start_time: startTime, end_time: endTime, notes }),
+        body: JSON.stringify({ date, start_time: startTime, end_time: endTime, notes, address }),
       });
       if (!res.ok) {
         const b = await res.json().catch(() => ({}));
