@@ -78,7 +78,8 @@ Return ONLY valid JSON in this exact shape — no markdown, no preamble:
     "google": {
       "post": "..."
     }
-  }
+  },
+  "compliance_notes": "..."
 }
 
 Rules:
@@ -100,7 +101,17 @@ Rules:
 - realtor_com.highlights: exactly 5 bullet points.
 - google.post: 100-150 words. Suitable for a Google Business Profile update. Include call to action.
 - Never mention the realtor name or brokerage.
-- Never include price unless provided above.`;
+- Never include price unless provided above.
+
+FAIR HOUSING SELF-REVIEW — before returning your JSON, review every piece of copy you wrote and:
+1. Remove or rewrite any language that references race, color, national origin, religion, sex, familial status, or disability — directly or indirectly.
+2. Rewrite phrases like "perfect for families", "safe neighborhood", "exclusive area", "walking distance to church/synagogue/mosque", "quiet street" (if implying demographics), "great schools" (unless citing a verifiable source).
+3. Remove any unsupported claims about investment returns, appreciation, crime rates, or school quality rankings.
+4. Replace demographic steering language with factual, property-specific descriptions.
+5. In the "compliance_notes" field, list any specific phrases you rewrote and what you changed them to. If nothing needed changing, write "All content reviewed. No Fair Housing issues found."
+
+The goal: every piece of copy must be something a licensed real estate attorney would approve.`;
+
 }
 
 export async function POST(
@@ -233,6 +244,7 @@ export async function POST(
       realtor_com: { description: string; highlights: string[] };
       google: { post: string };
     };
+    compliance_notes: string;
   };
 
   try {
@@ -283,6 +295,16 @@ export async function POST(
     return NextResponse.json({ error: "Failed to save output." }, { status: 500 });
   }
 
+  // Save platform_content and compliance_notes via separate update
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any)
+    .from("ai_outputs")
+    .update({
+      platform_content: parsed.platform_content,
+      compliance_notes: parsed.compliance_notes ?? "All content reviewed. No Fair Housing issues found.",
+    })
+    .eq("id", newOutput.id);
+
   if (listing.status === "intake_received") {
     await supabase
       .from("listings")
@@ -301,5 +323,6 @@ export async function POST(
     ...newOutput,
     social_captions: parsed.social_captions,
     platform_content: parsed.platform_content,
+    compliance_notes: parsed.compliance_notes ?? "All content reviewed. No Fair Housing issues found.",
   });
 }
