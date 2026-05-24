@@ -7,6 +7,7 @@ import StatusBadge from "@/components/ui/StatusBadge";
 import PhotoUploader from "@/components/listings/output/PhotoUploader";
 import PlatformPanel from "@/components/listings/output/PlatformPanel";
 import StyleSelector, { type ListingStyle } from "@/components/listings/output/StyleSelector";
+import OpenHousePanel from "@/components/listings/output/OpenHousePanel";
 import type { ListingStatus, PropertyType } from "@/types/database";
 
 // ---------------------------------------------------------------------------
@@ -508,6 +509,12 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
                   social_captions={currentOutput.social_captions}
                   platform_content={currentOutput.platform_content}
                   photos={photos}
+                  address={`${address_line1}, ${city}, ${state} ${zip}`}
+                />
+
+                {/* Open House Package */}
+                <OpenHousePanel
+                  listingId={id}
                   address={`${address_line1}, ${city}, ${state} ${zip}`}
                 />
 
