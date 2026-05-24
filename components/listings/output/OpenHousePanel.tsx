@@ -111,7 +111,7 @@ function QRCodeDisplay({ url, date, startTime, endTime }: {
           <p className="font-serif text-2xl text-gilt tracking-widest">LIMEN</p>
           <p className="font-sans text-xs text-stone tracking-wider uppercase mt-1">Open House</p>
         </div>
-        <div className="font-sans text-sm text-ink font-medium leading-snug">{address}</div>
+
         <div className="font-sans text-sm text-stone">
           <span className="font-medium text-ink">{date}</span>
           <br />
@@ -132,7 +132,7 @@ function QRCodeDisplay({ url, date, startTime, endTime }: {
   );
 }
 
-export default function OpenHousePanel({ listingId, address: _address }: OpenHousePanelProps) {
+export default function OpenHousePanel({ listingId, address }: OpenHousePanelProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState<OpenHousePackage | null>(null);
@@ -340,7 +340,6 @@ export default function OpenHousePanel({ listingId, address: _address }: OpenHou
                   </p>
                   <QRCodeDisplay
                     url={result.meta.listing_url}
-                    address={result.meta.address}
                     date={result.meta.date}
                     startTime={result.meta.start_time}
                     endTime={result.meta.end_time}
