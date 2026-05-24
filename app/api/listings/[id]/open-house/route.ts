@@ -13,7 +13,7 @@ export async function POST(
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json().catch(() => ({}));
-  const { date, start_time, end_time, notes } = body;
+  const { date, start_time, end_time, notes, address: bodyAddress, tone = "warm_inviting" } = body;
 
   if (!date || !start_time || !end_time) {
     return NextResponse.json({ error: "date, start_time, and end_time are required" }, { status: 400 });
@@ -42,7 +42,7 @@ export async function POST(
     .eq("listing_id", params.id)
     .single();
 
-  const address = [listing.address_line1, listing.address_line2, `${listing.city}, ${listing.state} ${listing.zip}`]
+  const address = bodyAddress || [listing.address_line1, listing.address_line2, `${listing.city}, ${listing.state} ${listing.zip}`]
     .filter(Boolean).join(", ");
 
   const specs = [
@@ -94,7 +94,15 @@ Rules:
 - email_body: 100-150 words. Professional email body for sphere of influence blast. Formal opening, key features, date/time/address, RSVP or walk-in welcome.
 - sign_in_sheet_header: 2-3 sentences welcoming visitors at the door. Warm and professional.
 - talking_points: Exactly 5 bullet points the agent can use during the open house tour. Specific to this property's features.
-- All content must comply with Fair Housing. No demographic references.`;
+- All content must comply with Fair Housing. No demographic references.
+
+TONE: ${tone.replace(/_/g, " ")}
+${tone === "clean_professional" ? "Write with precision and confidence. Short, declarative sentences. Facts lead." : ""}
+${tone === "warm_inviting" ? "Write conversationally and warmly. Make people feel welcome before they arrive." : ""}
+${tone === "luxury_elevated" ? "Write with restraint and elegance. Every word earns its place. Understated confidence." : ""}
+${tone === "modern_minimal" ? "Short sentences. Bold claims. No padding. Fast and confident." : ""}
+${tone === "local_southern_charm" ? "Community-first, neighborly, and genuine. Make neighbors feel it's their home too." : ""}
+${tone === "investor_practical" ? "Numbers-forward. Buyers want specs, price, and access. Keep it direct." : ""}`;
 
   let parsed: {
     announcement: string;
