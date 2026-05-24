@@ -60,8 +60,8 @@ function ContentCard({ label, content, note }: { label: string; content: string;
   );
 }
 
-function QRCodeDisplay({ url, address, date, startTime, endTime }: {
-  url: string; address: string; date: string; startTime: string; endTime: string;
+function QRCodeDisplay({ url, date, startTime, endTime }: {
+  url: string; date: string; startTime: string; endTime: string;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
