@@ -516,6 +516,7 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
                 <OpenHousePanel
                   listingId={id}
                   address={`${address_line1}, ${city}, ${state} ${zip}`}
+                  photos={photos}
                 />
 
                 {/* MLS submission */}
