@@ -41,12 +41,15 @@ interface DashboardMetrics {
   submitted: number;
 }
 
+import OnboardingPrompt from "@/components/dashboard/OnboardingPrompt";
+
 interface DashboardClientProps {
   listings: Listing[];
   notifications: Notification[];
   realtorName: string;
   metrics: DashboardMetrics;
   subscriptionStatus?: string | null;
+  onboardingCompleted?: boolean;
 }
 
 const FILTER_TABS: { label: string; value: "all" | ListingStatus }[] = [
@@ -66,6 +69,7 @@ export default function DashboardClient({
   realtorName,
   metrics,
   subscriptionStatus,
+  onboardingCompleted,
 }: DashboardClientProps) {
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<"all" | ListingStatus>("all");
@@ -169,6 +173,9 @@ export default function DashboardClient({
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        {/* Onboarding prompt for users who haven't set up their brand */}
+        {!onboardingCompleted && <OnboardingPrompt />}
 
         {/* Page header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
