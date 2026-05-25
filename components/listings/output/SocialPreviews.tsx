@@ -2,6 +2,23 @@
 
 import { useRef, useState } from "react";
 
+export interface BrandProfile {
+  brand_name?: string;
+  primary_color?: string;
+  secondary_color?: string;
+  background_color?: string;
+  text_color?: string;
+  accent_color?: string;
+  card_style?: string;
+  typography?: string;
+  tone?: string;
+  cta_style?: string;
+  headline_style?: string;
+  badge_text?: string;
+  tagline_style?: string;
+  design_notes?: string;
+}
+
 interface Photo {
   id: string;
   url: string;
@@ -13,6 +30,11 @@ interface SocialPreviewProps {
   caption: string;
   photos: Photo[];
   address: string;
+  brand?: BrandProfile | null;
+  agentName?: string;
+  agentPhone?: string;
+  logoUrl?: string | null;
+  headshotUrl?: string | null;
 }
 
 async function downloadCard(ref: React.RefObject<HTMLDivElement>, filename: string) {
@@ -29,6 +51,24 @@ async function downloadCard(ref: React.RefObject<HTMLDivElement>, filename: stri
   link.href = canvas.toDataURL("image/png");
   link.click();
 }
+
+function getBrandTheme(brand?: BrandProfile | null) {
+  return {
+    primary: brand?.primary_color ?? "#1A1814",
+    secondary: brand?.secondary_color ?? "#C8A96E",
+    background: brand?.background_color ?? "#F7F5F1",
+    text: brand?.text_color ?? "#1A1814",
+    accent: brand?.accent_color ?? "#C8A96E",
+    badge: brand?.badge_text ?? "Just Listed",
+    cardStyle: brand?.card_style ?? "clean_white",
+  };
+}
+
+const POWERED_BY = (
+  <p style={{ fontSize: "9px", color: "#aaa", marginTop: "4px", textAlign: "right" }}>
+    Powered by Limen
+  </p>
+);
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -57,10 +97,12 @@ function DownloadButton({ cardRef, filename }: { cardRef: React.RefObject<HTMLDi
 // ---------------------------------------------------------------------------
 // Facebook Preview
 // ---------------------------------------------------------------------------
-export function FacebookPreview({ caption, photos, address }: SocialPreviewProps) {
+export function FacebookPreview({ caption, photos, address, brand, agentName, logoUrl }: SocialPreviewProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const cover = photos[0];
   const grid = photos.slice(1, 4);
+  const theme = getBrandTheme(brand);
+  const displayName = agentName ?? address;
 
   return (
     <div className="space-y-3">
@@ -75,10 +117,21 @@ export function FacebookPreview({ caption, photos, address }: SocialPreviewProps
       <div ref={cardRef} className="bg-white rounded-lg overflow-hidden border border-stone/10 max-w-[500px] mx-auto shadow-sm">
         {/* Header */}
         <div className="flex items-center gap-3 p-3">
-          <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">RE</div>
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoUrl} alt="Logo" className="w-10 h-10 rounded-full object-contain bg-gray-50" crossOrigin="anonymous" />
+          ) : (
+            <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style={{ background: theme.primary }}>
+              {(agentName ?? "RE").slice(0, 2).toUpperCase()}
+            </div>
+          )}
           <div>
-            <p className="font-sans text-sm font-semibold text-gray-900">{address}</p>
+            <p className="font-sans text-sm font-semibold text-gray-900">{displayName}</p>
             <p className="font-sans text-xs text-gray-500">Just now · 🌐</p>
+          </div>
+          {/* Badge */}
+          <div className="ml-auto px-2 py-0.5 rounded text-xs font-sans font-medium" style={{ background: theme.accent, color: theme.primary }}>
+            {theme.badge}
           </div>
         </div>
 
@@ -113,7 +166,7 @@ export function FacebookPreview({ caption, photos, address }: SocialPreviewProps
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={grid[1].url} alt="Listing" className="w-full h-[108px] object-cover" crossOrigin="anonymous" />
                     {photos.length > 4 && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <div className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.5)" }}>
                         <span className="text-white font-sans text-xl font-bold">+{photos.length - 4}</span>
                       </div>
                     )}
@@ -136,6 +189,7 @@ export function FacebookPreview({ caption, photos, address }: SocialPreviewProps
             <button className="font-sans text-xs text-gray-500 font-medium">Share</button>
           </div>
         </div>
+        {POWERED_BY}
       </div>
     </div>
   );
@@ -144,9 +198,11 @@ export function FacebookPreview({ caption, photos, address }: SocialPreviewProps
 // ---------------------------------------------------------------------------
 // Instagram Preview
 // ---------------------------------------------------------------------------
-export function InstagramPreview({ caption, photos, address }: SocialPreviewProps) {
+export function InstagramPreview({ caption, photos, address, brand, agentName, logoUrl }: SocialPreviewProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const cover = photos[0];
+  const theme = getBrandTheme(brand);
+  const handle = (agentName ?? address).toLowerCase().replace(/\s+/g, "_").slice(0, 20);
   const hashtagSplit = caption.split("#");
   const mainText = hashtagSplit[0].trim();
   const hashtags = hashtagSplit.length > 1 ? "#" + hashtagSplit.slice(1).join("#") : "";
@@ -165,13 +221,20 @@ export function InstagramPreview({ caption, photos, address }: SocialPreviewProp
         {/* Header */}
         <div className="flex items-center justify-between px-3 py-2">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-0.5">
-              <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
-                <span className="font-bold text-xs text-pink-500">RE</span>
+            {logoUrl ? (
+              <div className="w-8 h-8 rounded-full p-0.5" style={{ background: `linear-gradient(135deg, ${theme.accent}, ${theme.primary})` }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={logoUrl} alt="Logo" className="w-full h-full rounded-full object-contain bg-white" crossOrigin="anonymous" />
               </div>
-            </div>
+            ) : (
+              <div className="w-8 h-8 rounded-full p-0.5" style={{ background: `linear-gradient(135deg, ${theme.accent}, ${theme.primary})` }}>
+                <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
+                  <span className="font-bold text-xs" style={{ color: theme.primary }}>{(agentName ?? "RE").slice(0, 2).toUpperCase()}</span>
+                </div>
+              </div>
+            )}
             <div>
-              <p className="font-sans text-xs font-semibold text-gray-900">realtor_agent</p>
+              <p className="font-sans text-xs font-semibold text-gray-900">@{handle}</p>
               <p className="font-sans text-[10px] text-gray-500">{address.split(",")[0]}</p>
             </div>
           </div>
@@ -200,20 +263,12 @@ export function InstagramPreview({ caption, photos, address }: SocialPreviewProp
 
         {/* Caption */}
         <div className="px-3 pb-3 space-y-1">
-          <p className="font-sans text-xs font-semibold text-gray-900">realtor_agent <span className="font-normal text-gray-800">{mainText.slice(0, 120)}{mainText.length > 120 ? "… more" : ""}</span></p>
+          <p className="font-sans text-xs font-semibold text-gray-900">@{handle} <span className="font-normal text-gray-800">{mainText.slice(0, 120)}{mainText.length > 120 ? "… more" : ""}</span></p>
           {hashtags && <p className="font-sans text-xs text-blue-500">{hashtags.slice(0, 100)}</p>}
           <p className="font-sans text-[10px] text-gray-400 uppercase tracking-wide">View all comments</p>
           <p className="font-sans text-[10px] text-gray-400">Just now</p>
         </div>
-
-        {/* Story dots if multiple photos */}
-        {photos.length > 1 && (
-          <div className="flex justify-center gap-1 pb-2">
-            {photos.slice(0, 5).map((_, i) => (
-              <div key={i} className={`rounded-full ${i === 0 ? "w-2 h-2 bg-blue-500" : "w-1.5 h-1.5 bg-gray-300"}`} />
-            ))}
-          </div>
-        )}
+        {POWERED_BY}
       </div>
     </div>
   );
@@ -222,9 +277,11 @@ export function InstagramPreview({ caption, photos, address }: SocialPreviewProp
 // ---------------------------------------------------------------------------
 // TikTok Preview
 // ---------------------------------------------------------------------------
-export function TikTokPreview({ caption, photos }: SocialPreviewProps) {
+export function TikTokPreview({ caption, photos, brand, agentName }: SocialPreviewProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const cover = photos[0];
+  const theme = getBrandTheme(brand);
+  const handle = (agentName ?? "realtor_agent").toLowerCase().replace(/\s+/g, "_").slice(0, 20);
   const lines = caption.split("\n").filter(Boolean);
 
   return (
@@ -260,15 +317,15 @@ export function TikTokPreview({ caption, photos }: SocialPreviewProps) {
             <div className="space-y-2">
               <div className="flex justify-between items-end">
                 <div className="flex-1 pr-4">
-                  <p className="text-white font-sans text-xs font-semibold">@realtor_agent</p>
+                  <p className="text-white font-sans text-xs font-semibold">@{handle}</p>
                   <p className="text-white font-sans text-[10px] mt-0.5 leading-relaxed line-clamp-3">
                     {lines[0] ?? caption.slice(0, 80)}
                   </p>
                   <p className="text-white/70 font-sans text-[10px] mt-1">🎵 Original Sound</p>
                 </div>
                 <div className="flex flex-col items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-pink-500 to-blue-500 border-2 border-white flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">+</span>
+                  <div className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center" style={{ background: theme.accent }}>
+                    <span className="text-xs font-bold" style={{ color: theme.primary }}>+</span>
                   </div>
                   <div className="text-center"><span className="text-white text-lg">🤍</span><p className="text-white font-sans text-[9px]">24.5K</p></div>
                   <div className="text-center"><span className="text-white text-lg">💬</span><p className="text-white font-sans text-[9px]">342</p></div>
@@ -300,9 +357,11 @@ export function TikTokPreview({ caption, photos }: SocialPreviewProps) {
 // ---------------------------------------------------------------------------
 // Twitter/X Preview
 // ---------------------------------------------------------------------------
-export function TwitterPreview({ caption, photos }: SocialPreviewProps) {
+export function TwitterPreview({ caption, photos, brand, agentName, logoUrl }: SocialPreviewProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const cover = photos[0];
+  const theme = getBrandTheme(brand);
+  const handle = (agentName ?? "realtor_agent").toLowerCase().replace(/\s+/g, "_").slice(0, 20);
 
   return (
     <div className="space-y-3">
@@ -316,12 +375,19 @@ export function TwitterPreview({ caption, photos }: SocialPreviewProps) {
 
       <div ref={cardRef} className="bg-white max-w-[500px] mx-auto border border-stone/10 rounded-2xl overflow-hidden shadow-sm p-4">
         <div className="flex gap-3">
-          <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">RE</div>
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoUrl} alt="Logo" className="w-10 h-10 rounded-full object-contain bg-gray-50 flex-shrink-0" crossOrigin="anonymous" />
+          ) : (
+            <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style={{ background: theme.primary }}>
+              {(agentName ?? "RE").slice(0, 2).toUpperCase()}
+            </div>
+          )}
           <div className="flex-1 space-y-2">
             <div className="flex items-center gap-1">
-              <span className="font-sans text-sm font-bold text-gray-900">Realtor Agent</span>
+              <span className="font-sans text-sm font-bold text-gray-900">{agentName ?? "Realtor Agent"}</span>
               <span className="text-blue-500 text-sm">✓</span>
-              <span className="font-sans text-xs text-gray-500">@realtor_agent · now</span>
+              <span className="font-sans text-xs text-gray-500">@{handle} · now</span>
             </div>
             <p className="font-sans text-sm text-gray-900 leading-relaxed">{caption}</p>
             {cover && (
@@ -337,6 +403,7 @@ export function TwitterPreview({ caption, photos }: SocialPreviewProps) {
             </div>
           </div>
         </div>
+        {POWERED_BY}
       </div>
     </div>
   );
@@ -345,9 +412,10 @@ export function TwitterPreview({ caption, photos }: SocialPreviewProps) {
 // ---------------------------------------------------------------------------
 // LinkedIn Preview
 // ---------------------------------------------------------------------------
-export function LinkedInPreview({ caption, photos, address }: SocialPreviewProps) {
+export function LinkedInPreview({ caption, photos, address, brand, agentName, logoUrl }: SocialPreviewProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const cover = photos[0];
+  const theme = getBrandTheme(brand);
 
   return (
     <div className="space-y-3">
@@ -362,9 +430,16 @@ export function LinkedInPreview({ caption, photos, address }: SocialPreviewProps
       <div ref={cardRef} className="bg-white max-w-[500px] mx-auto border border-stone/10 rounded-lg overflow-hidden shadow-sm">
         <div className="p-4 space-y-3">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-blue-700 flex items-center justify-center text-white font-bold flex-shrink-0">RE</div>
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logoUrl} alt="Logo" className="w-12 h-12 rounded-full object-contain bg-gray-50 flex-shrink-0" crossOrigin="anonymous" />
+            ) : (
+              <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0" style={{ background: theme.primary }}>
+                {(agentName ?? "RE").slice(0, 2).toUpperCase()}
+              </div>
+            )}
             <div>
-              <p className="font-sans text-sm font-semibold text-gray-900">Real Estate Agent</p>
+              <p className="font-sans text-sm font-semibold text-gray-900">{agentName ?? "Real Estate Agent"}</p>
               <p className="font-sans text-xs text-gray-500">REALTOR® · {address.split(",").slice(1).join(",").trim()}</p>
               <p className="font-sans text-xs text-gray-400">Just now · 🌐</p>
             </div>
@@ -387,6 +462,7 @@ export function LinkedInPreview({ caption, photos, address }: SocialPreviewProps
           <button className="font-sans text-xs text-gray-500 font-medium">🔁 Repost</button>
           <button className="font-sans text-xs text-gray-500 font-medium">↗ Send</button>
         </div>
+        {POWERED_BY}
       </div>
     </div>
   );
@@ -395,9 +471,10 @@ export function LinkedInPreview({ caption, photos, address }: SocialPreviewProps
 // ---------------------------------------------------------------------------
 // Nextdoor Preview
 // ---------------------------------------------------------------------------
-export function NextdoorPreview({ caption, photos, address }: SocialPreviewProps) {
+export function NextdoorPreview({ caption, photos, address, brand, agentName, logoUrl }: SocialPreviewProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const cover = photos[0];
+  const theme = getBrandTheme(brand);
 
   return (
     <div className="space-y-3">
@@ -412,12 +489,19 @@ export function NextdoorPreview({ caption, photos, address }: SocialPreviewProps
       <div ref={cardRef} className="bg-white max-w-[500px] mx-auto border border-stone/10 rounded-lg overflow-hidden shadow-sm">
         <div className="p-4 space-y-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-green-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">RE</div>
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logoUrl} alt="Logo" className="w-10 h-10 rounded-full object-contain bg-gray-50 flex-shrink-0" crossOrigin="anonymous" />
+            ) : (
+              <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style={{ background: theme.primary }}>
+                {(agentName ?? "RE").slice(0, 2).toUpperCase()}
+              </div>
+            )}
             <div>
-              <p className="font-sans text-sm font-semibold text-gray-900">Real Estate Agent</p>
+              <p className="font-sans text-sm font-semibold text-gray-900">{agentName ?? "Real Estate Agent"}</p>
               <p className="font-sans text-xs text-gray-500">📍 {address.split(",")[1]?.trim() ?? "Local Neighborhood"}</p>
             </div>
-            <span className="ml-auto bg-green-100 text-green-700 font-sans text-xs px-2 py-0.5 rounded-full">For Sale</span>
+            <span className="ml-auto font-sans text-xs px-2 py-0.5 rounded-full" style={{ background: theme.accent + "20", color: theme.primary }}>For Sale</span>
           </div>
           <p className="font-sans text-sm text-gray-800 leading-relaxed whitespace-pre-wrap">{caption}</p>
         </div>
@@ -430,6 +514,7 @@ export function NextdoorPreview({ caption, photos, address }: SocialPreviewProps
           <button className="font-sans text-xs text-gray-500">💬 Comment</button>
           <button className="font-sans text-xs text-gray-500">↗ Share</button>
         </div>
+        {POWERED_BY}
       </div>
     </div>
   );
