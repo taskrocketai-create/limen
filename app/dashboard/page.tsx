@@ -35,11 +35,12 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: profile } = await (supabase as any)
     .from("profiles")
-    .select("full_name, stripe_subscription_status, stripe_subscription_id")
+    .select("full_name, stripe_subscription_status, stripe_subscription_id, onboarding_completed")
     .eq("id", user.id)
-    .single();
+    .single() as { data: { full_name: string | null; stripe_subscription_status: string | null; stripe_subscription_id: string | null; onboarding_completed: boolean } | null };
 
   const { data: listings = [] } = await supabase
     .from("listings")
@@ -73,6 +74,7 @@ export default async function DashboardPage() {
       realtorName={profile?.full_name ?? "Realtor"}
       metrics={metrics}
       subscriptionStatus={(profile as { stripe_subscription_status?: string } | null)?.stripe_subscription_status ?? null}
+      onboardingCompleted={(profile as { onboarding_completed?: boolean } | null)?.onboarding_completed ?? false}
     />
   );
 }
