@@ -37,7 +37,7 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name")
+    .select("full_name, stripe_subscription_status, stripe_subscription_id")
     .eq("id", user.id)
     .single();
 
@@ -72,6 +72,7 @@ export default async function DashboardPage() {
       notifications={notifications ?? []}
       realtorName={profile?.full_name ?? "Realtor"}
       metrics={metrics}
+      subscriptionStatus={(profile as { stripe_subscription_status?: string } | null)?.stripe_subscription_status ?? null}
     />
   );
 }
