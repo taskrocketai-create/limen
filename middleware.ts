@@ -2,8 +2,6 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
-  // If Supabase env vars are not configured (local preview without .env.local),
-  // pass all traffic through without auth enforcement.
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const isPreview =
@@ -39,21 +37,18 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // Refresh session — must not run any logic between createServerClient
-  // and getUser(), as the Supabase docs require.
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protect realtor routes — redirect unauthenticated users to /login
   const { pathname } = request.nextUrl;
-  const protectedPrefixes = ["/dashboard", "/listings"];
+  const protectedPrefixes = ["/dashboard", "/listings", "/settings"];
 
   const isProtected = protectedPrefixes.some((prefix) =>
     pathname.startsWith(prefix)
   );
 
-  // /intake/[token] is intentionally unauthenticated — never protect it
+  // Redirect unauthenticated users to login
   if (isProtected && !user) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
@@ -61,19 +56,33 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  // Subscription paywall — check active/trialing status
+  if (isProtected && user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("stripe_subscription_status")
+      .eq("id", user.id)
+      .single();
+
+    const status = (profile as { stripe_subscription_status?: string } | null)?.stripe_subscription_status;
+    const isSubscribed = status === "active" || status === "trialing";
+
+    // Allow access to subscribe and billing pages always
+    const isBillingPath = pathname.startsWith("/settings/billing") || pathname === "/subscribe";
+
+    if (!isSubscribed && !isBillingPath) {
+      const subscribeUrl = request.nextUrl.clone();
+      subscribeUrl.pathname = "/subscribe";
+      return NextResponse.redirect(subscribeUrl);
+    }
+  }
+
   return supabaseResponse;
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimisation)
-     * - favicon.ico
-     * - /intake/* (homeowner intake — always public)
-     * - /api/intake/* (intake API routes — always public)
-     */
-    "/((?!_next/static|_next/image|favicon.ico|intake|api/intake).*)",
+    "/((?!_next/static|_next/image|favicon.ico|intake|api/intake|api/stripe).*)",
   ],
 };
+
