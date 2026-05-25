@@ -118,7 +118,13 @@ export default async function ListingPage({ params }: ListingPageProps) {
     redirect(`/listings/${params.id}/archived`);
   }
 
-  // Fetch usage count
+  // Fetch agent brand profile
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: agentProfile } = await (supabase as any)
+    .from("profiles")
+    .select("full_name, phone, brand_profile, logo_url, headshot_url")
+    .eq("id", user.id)
+    .single() as { data: { full_name: string | null; phone: string | null; brand_profile: Record<string, string> | null; logo_url: string | null; headshot_url: string | null } | null };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: profileData } = await (supabase as any)
     .from("profiles")
@@ -178,6 +184,11 @@ export default async function ListingPage({ params }: ListingPageProps) {
       mls_number={listing.mls_number}
       listing_locked={listing.locked ?? false}
       packages_used={packagesUsed}
+      brand={agentProfile?.brand_profile ?? null}
+      agent_name={agentProfile?.full_name ?? undefined}
+      agent_phone={agentProfile?.phone ?? undefined}
+      logo_url={agentProfile?.logo_url ?? null}
+      headshot_url={agentProfile?.headshot_url ?? null}
       listing_details={listing_details ?? null}
       photos={photos}
       ai_outputs={(ai_outputs ?? []).map((o) => ({
