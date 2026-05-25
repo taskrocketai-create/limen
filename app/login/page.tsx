@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Wordmark } from "@/components/brand/Logo";
 import { createClient } from "@/utils/supabase/client";
 import { PREVIEW_MODE } from "@/utils/preview-data";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirectTo") ?? "/dashboard";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +19,7 @@ export default function LoginPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (PREVIEW_MODE) {
-      router.push("/dashboard");
+      router.push(redirectTo);
       return;
     }
     setError(null);
@@ -28,7 +30,7 @@ export default function LoginPage() {
     if (authError) {
       setError(authError.message);
     } else {
-      router.push("/dashboard");
+      router.push(redirectTo);
     }
   }
 
