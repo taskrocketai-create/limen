@@ -1,16 +1,17 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 import Link from "next/link";
 
 export default async function InvitePage({ params }: { params: { token: string } }) {
   const supabase = createClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabaseAdmin = supabase as any;
+  const supabaseAdmin = createAdminClient() as any;
 
-  // Look up invite
+  // Look up invite using admin client to bypass RLS
   const { data: invite } = await supabaseAdmin
     .from("agency_invites")
-    .select("id, agency_id, email, status, expires_at, agencies(name, owner_id, agent_count, current_price_per_agent, profiles(full_name))")
+    .select("id, agency_id, email, status, expires_at")
     .eq("token", params.token)
     .single();
 
@@ -36,17 +37,23 @@ export default async function InvitePage({ params }: { params: { token: string }
         <div className="text-center max-w-md">
           <div className="text-gilt font-serif text-4xl mb-4">LIMEN</div>
           <h1 className="font-serif text-2xl text-ink mb-4">Invitation expired</h1>
-          <p className="font-sans text-stone mb-8">This invitation has expired. Ask {invite.agencies?.profiles?.full_name} to send a new one.</p>
+          <p className="font-sans text-stone mb-8">This invitation has expired. Ask your agency owner to send a new one.</p>
         </div>
       </div>
     );
   }
 
-  const agency = invite.agencies;
+  // Get agency details
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: agency } = await (supabaseAdmin as any)
+    .from("agencies")
+    .select("id, name, owner_id, agent_count, current_price_per_agent")
+    .eq("id", invite.agency_id)
+    .single() as { data: { id: string; name: string; owner_id: string; agent_count: number; current_price_per_agent: number } | null };
+
   const pricePerAgent = agency?.current_price_per_agent ?? 4900;
   const newCount = (agency?.agent_count ?? 1) + 1;
 
-  // Calculate what the new price will be after joining
   const newPrice = newCount <= 1 ? 4900
     : newCount <= 5 ? 4400
     : newCount <= 10 ? 3900
@@ -114,10 +121,6 @@ export default async function InvitePage({ params }: { params: { token: string }
             <div className="flex justify-between font-sans text-sm">
               <span className="text-stone">Agency</span>
               <span className="text-ink font-medium">{agency?.name}</span>
-            </div>
-            <div className="flex justify-between font-sans text-sm">
-              <span className="text-stone">Invited by</span>
-              <span className="text-ink">{agency?.profiles?.full_name}</span>
             </div>
             <div className="flex justify-between font-sans text-sm">
               <span className="text-stone">Team size after you join</span>
