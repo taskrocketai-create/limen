@@ -28,6 +28,10 @@ function SignupForm() {
       setError("Real estate license number is required.");
       return;
     }
+    if (!/^\d{6}$/.test(licenseNumber.trim())) {
+      setError("NC real estate license numbers are 6 digits (e.g. 123456). Please check your number.");
+      return;
+    }
     setError(null);
     setLoading(true);
     const supabase = createClient();
@@ -121,16 +125,18 @@ function SignupForm() {
 
             <div className="space-y-1">
               <label className="font-sans text-xs text-stone tracking-widest uppercase">
-                Real estate license number <span className="text-gilt">*</span>
+                NC Real estate license number <span className="text-gilt">*</span>
               </label>
               <input
                 type="text"
                 value={licenseNumber}
-                onChange={e => setLicenseNumber(e.target.value)}
+                onChange={e => setLicenseNumber(e.target.value.replace(/\D/g, "").slice(0, 6))}
                 required
-                placeholder="e.g. NC12345"
+                placeholder="6-digit license number"
+                maxLength={6}
                 className="w-full bg-ink border border-stone/30 px-3 py-2.5 font-sans text-sm text-parchment focus:outline-none focus:border-gilt rounded"
               />
+              <p className="font-sans text-xs text-stone/50">NC licenses are 6 digits — numbers only</p>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
