@@ -140,7 +140,12 @@ export default function BillingPage() {
 
             {/* Agency pricing note */}
             <div className="bg-white border border-stone/20 rounded-lg p-6 space-y-3">
-              <h2 className="font-serif text-xl text-ink">Agency pricing</h2>
+              <div className="flex items-center justify-between">
+                <h2 className="font-serif text-xl text-ink">Agency pricing</h2>
+                <Link href="/settings" className="font-sans text-xs text-gilt hover:underline">
+                  Manage agency →
+                </Link>
+              </div>
               <p className="font-sans text-sm text-stone">
                 Invite agents from Settings → Agency. Pricing drops automatically as your team grows.
               </p>
