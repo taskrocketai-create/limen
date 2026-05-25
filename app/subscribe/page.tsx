@@ -33,13 +33,20 @@ export default function SubscribePage() {
     setError("");
     try {
       const priceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_SOLO;
+
+      if (!priceId) {
+        setError("Stripe is not configured. Please contact support.");
+        setLoading(false);
+        return;
+      }
+
       const res = await fetch("/api/stripe/create-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ price_id: priceId }),
       });
 
-      // Not logged in — redirect to signup/login first
+      // Not logged in — redirect to login first
       if (res.status === 401) {
         window.location.href = "/login?redirectTo=/subscribe";
         return;
