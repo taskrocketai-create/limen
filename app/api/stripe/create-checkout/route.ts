@@ -38,18 +38,20 @@ export async function POST(req: Request) {
       .eq("id", user.id);
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://limenai.org";
 
   const session = await getStripe().checkout.sessions.create({
     customer: customerId,
     payment_method_types: ["card"],
     mode: "subscription",
     line_items: [{ price: price_id, quantity: 1 }],
-    success_url: `${appUrl}/dashboard?subscribed=true`,
-    cancel_url: `${appUrl}/dashboard`,
+    success_url: `${siteUrl}/dashboard?subscribed=true`,
+    cancel_url: `${siteUrl}/subscribe`,
     subscription_data: {
+      trial_period_days: 14,
       metadata: { supabase_user_id: user.id },
     },
+    allow_promotion_codes: true,
   });
 
   return NextResponse.json({ url: session.url });
