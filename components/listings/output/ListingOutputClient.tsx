@@ -527,6 +527,10 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
                   platform_content={currentOutput.platform_content}
                   photos={photos}
                   address={`${address_line1}, ${city}, ${state} ${zip}`}
+                  price={price}
+                  bedrooms={bedrooms}
+                  bathrooms={bathrooms}
+                  sqft={sqft}
                   brand={brand}
                   agentName={agent_name}
                   agentPhone={agent_phone}
