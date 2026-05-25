@@ -77,6 +77,22 @@ interface ListingOutputClientProps {
   ai_outputs: AiOutput[];
   listing_locked: boolean;
   packages_used: number;
+  brand?: {
+    primary_color?: string;
+    secondary_color?: string;
+    background_color?: string;
+    text_color?: string;
+    accent_color?: string;
+    card_style?: string;
+    typography?: string;
+    tone?: string;
+    cta_style?: string;
+    badge_text?: string;
+  } | null;
+  agent_name?: string;
+  agent_phone?: string;
+  logo_url?: string | null;
+  headshot_url?: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -116,6 +132,7 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
     intake_token, intake_sent_at, intake_completed_at,
     listing_details, photos, ai_outputs,
     listing_locked, packages_used: initialPackagesUsed,
+    brand, agent_name, agent_phone, logo_url, headshot_url,
   } = props;
 
   const [, startTransition] = useTransition();
@@ -510,6 +527,11 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
                   platform_content={currentOutput.platform_content}
                   photos={photos}
                   address={`${address_line1}, ${city}, ${state} ${zip}`}
+                  brand={brand}
+                  agentName={agent_name}
+                  agentPhone={agent_phone}
+                  logoUrl={logo_url}
+                  headshotUrl={headshot_url}
                 />
 
                 {/* Open House Package */}
