@@ -2,16 +2,13 @@
 
 import { useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Wordmark } from "@/components/brand/Logo";
 import { createClient } from "@/utils/supabase/client";
 import { PREVIEW_MODE } from "@/utils/preview-data";
 
 function SignupForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const isStudent = searchParams.get("student") === "true";
-  const schoolCode = searchParams.get("school") ?? "";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -19,7 +16,7 @@ function SignupForm() {
   const [licenseNumber, setLicenseNumber] = useState("");
   const [brokerage, setBrokerage] = useState("");
   const [phone, setPhone] = useState("");
-  const [studentCode, setStudentCode] = useState(schoolCode);
+  const [schoolCode, setSchoolCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
@@ -43,8 +40,7 @@ function SignupForm() {
           license_number: licenseNumber,
           brokerage,
           phone,
-          is_student: isStudent,
-          school_code: studentCode || null,
+          school_code: schoolCode || null,
         },
       },
     });
@@ -54,7 +50,6 @@ function SignupForm() {
       return;
     }
 
-    // Update profile with additional fields
     if (authData.user) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
@@ -96,11 +91,6 @@ function SignupForm() {
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
           <Wordmark size={40} variant="primary" />
-          {isStudent && (
-            <div className="mt-4 bg-gilt/10 border border-gilt/30 rounded-lg px-4 py-2">
-              <p className="font-sans text-xs text-gilt">Student account — 14-day free trial included</p>
-            </div>
-          )}
         </div>
 
         <div className="bg-midnight border border-stone/20 p-8 space-y-5">
@@ -166,18 +156,18 @@ function SignupForm() {
               </div>
             </div>
 
-            {isStudent && (
-              <div className="space-y-1">
-                <label className="font-sans text-xs text-stone tracking-widest uppercase">School code</label>
-                <input
-                  type="text"
-                  value={studentCode}
-                  onChange={e => setStudentCode(e.target.value)}
-                  placeholder="Enter your school's referral code"
-                  className="w-full bg-ink border border-stone/30 px-3 py-2.5 font-sans text-sm text-parchment focus:outline-none focus:border-gilt rounded"
-                />
-              </div>
-            )}
+            <div className="space-y-1">
+              <label className="font-sans text-xs text-stone tracking-widest uppercase">
+                School code <span className="normal-case tracking-normal text-stone/50">(optional — for real estate students)</span>
+              </label>
+              <input
+                type="text"
+                value={schoolCode}
+                onChange={e => setSchoolCode(e.target.value)}
+                placeholder="Enter your school's referral code"
+                className="w-full bg-ink border border-stone/30 px-3 py-2.5 font-sans text-sm text-parchment focus:outline-none focus:border-gilt rounded"
+              />
+            </div>
 
             <div className="space-y-1">
               <label className="font-sans text-xs text-stone tracking-widest uppercase">Password</label>
