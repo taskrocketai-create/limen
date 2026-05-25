@@ -38,6 +38,13 @@ export default function SubscribePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ price_id: priceId }),
       });
+
+      // Not logged in — redirect to signup/login first
+      if (res.status === 401) {
+        window.location.href = "/login?redirectTo=/subscribe";
+        return;
+      }
+
       const data = await res.json();
       if (!res.ok) {
         setError(data.error ?? "Something went wrong. Please try again.");
