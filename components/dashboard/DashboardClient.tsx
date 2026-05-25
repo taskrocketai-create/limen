@@ -46,6 +46,7 @@ interface DashboardClientProps {
   notifications: Notification[];
   realtorName: string;
   metrics: DashboardMetrics;
+  subscriptionStatus?: string | null;
 }
 
 const FILTER_TABS: { label: string; value: "all" | ListingStatus }[] = [
@@ -64,6 +65,7 @@ export default function DashboardClient({
   notifications: initialNotifications,
   realtorName,
   metrics,
+  subscriptionStatus,
 }: DashboardClientProps) {
   const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<"all" | ListingStatus>("all");
@@ -114,6 +116,31 @@ export default function DashboardClient({
 
   return (
     <div className="min-h-screen bg-parchment">
+
+      {/* Trial banner */}
+      {subscriptionStatus === "trialing" && (
+        <div className="bg-gilt text-ink px-6 py-2 flex items-center justify-between">
+          <p className="font-sans text-xs font-medium">
+            You are on a 14-day free trial. Add your card to continue after the trial ends.
+          </p>
+          <a href="/settings/billing" className="font-sans text-xs underline hover:no-underline flex-shrink-0 ml-4">
+            Manage billing →
+          </a>
+        </div>
+      )}
+
+      {/* Past due banner */}
+      {subscriptionStatus === "past_due" && (
+        <div className="bg-red-600 text-white px-6 py-2 flex items-center justify-between">
+          <p className="font-sans text-xs font-medium">
+            Your payment failed. Update your payment method to keep access.
+          </p>
+          <a href="/settings/billing" className="font-sans text-xs underline hover:no-underline flex-shrink-0 ml-4">
+            Update payment →
+          </a>
+        </div>
+      )}
+
       {/* Top nav */}
       <header className="bg-ink border-b border-ink sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
