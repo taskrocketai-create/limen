@@ -60,20 +60,28 @@ export async function middleware(request: NextRequest) {
   if (isProtected && user) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("stripe_subscription_status")
+      .select("stripe_subscription_status, onboarding_completed")
       .eq("id", user.id)
       .single();
 
-    const status = (profile as { stripe_subscription_status?: string } | null)?.stripe_subscription_status;
+    const status = (profile as { stripe_subscription_status?: string; onboarding_completed?: boolean } | null)?.stripe_subscription_status;
+    const onboardingCompleted = (profile as { onboarding_completed?: boolean } | null)?.onboarding_completed ?? false;
     const isSubscribed = status === "active" || status === "trialing";
 
-    // Allow access to subscribe and billing pages always
     const isBillingPath = pathname.startsWith("/settings/billing") || pathname === "/subscribe";
+    const isOnboardingPath = pathname === "/onboarding";
 
-    if (!isSubscribed && !isBillingPath) {
+    if (!isSubscribed && !isBillingPath && !isOnboardingPath) {
       const subscribeUrl = request.nextUrl.clone();
       subscribeUrl.pathname = "/subscribe";
       return NextResponse.redirect(subscribeUrl);
+    }
+
+    // Redirect to onboarding if not completed (but not if already there)
+    if (isSubscribed && !onboardingCompleted && pathname === "/dashboard" && !isOnboardingPath) {
+      const onboardingUrl = request.nextUrl.clone();
+      onboardingUrl.pathname = "/onboarding";
+      return NextResponse.redirect(onboardingUrl);
     }
   }
 
