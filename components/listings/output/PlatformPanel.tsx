@@ -175,7 +175,7 @@ function PhotoStrip({ photos, max = 5, label }: { photos: Photo[]; max?: number;
   );
 }
 
-export default function PlatformPanel({ social_captions, platform_content, photos, address, brand, agentName, agentPhone, logoUrl, headshotUrl }: PlatformPanelProps) {
+export default function PlatformPanel({ social_captions, platform_content, photos, address, brand, agentName, logoUrl }: PlatformPanelProps) {
   const [active, setActive] = useState<PlatformId | null>(null);
 
   const hasContent = (id: PlatformId) => {
