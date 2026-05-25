@@ -121,7 +121,7 @@ export default function DashboardClient({
       {subscriptionStatus === "trialing" && (
         <div className="bg-gilt text-ink px-6 py-2 flex items-center justify-between">
           <p className="font-sans text-xs font-medium">
-            You are on a 14-day free trial. Add your card to continue after the trial ends.
+            Your 14-day free trial is active. You will not be charged until your trial ends.
           </p>
           <a href="/settings/billing" className="font-sans text-xs underline hover:no-underline flex-shrink-0 ml-4">
             Manage billing →
