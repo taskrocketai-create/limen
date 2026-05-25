@@ -32,7 +32,8 @@ export async function POST(request: Request) {
     .single();
 
   if (agencyError || !agency) {
-    return NextResponse.json({ error: "Failed to create agency" }, { status: 500 });
+    console.error("Agency insert error:", JSON.stringify(agencyError));
+    return NextResponse.json({ error: agencyError?.message ?? "Failed to create agency" }, { status: 500 });
   }
 
   // Add owner as member
