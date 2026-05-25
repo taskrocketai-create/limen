@@ -199,9 +199,9 @@ export default function OnboardingPage() {
         <div className="max-w-lg w-full text-center space-y-8">
           <div className="space-y-3">
             <p className="font-sans text-xs tracking-widest uppercase text-gilt/60">Welcome to Limen</p>
-            <h1 className="font-serif text-5xl text-parchment">Let's build your brand.</h1>
+            <h1 className="font-serif text-5xl text-parchment">Let&apos;s build your brand.</h1>
             <p className="font-sans text-base text-stone leading-relaxed">
-              Answer 5 quick questions and we'll generate a complete marketing brand profile for your listings — colors, style, tone, and design. Takes about 3 minutes.
+              Answer 5 quick questions and we&apos;ll generate a complete marketing brand profile for your listings — colors, style, tone, and design. Takes about 3 minutes.
             </p>
           </div>
           <div className="flex flex-col gap-3">
@@ -215,7 +215,7 @@ export default function OnboardingPage() {
               onClick={() => router.push("/dashboard")}
               className="w-full text-stone/50 font-sans text-xs hover:text-stone transition-colors py-2"
             >
-              Skip for now — I'll do this later
+              Skip for now — I&apos;ll do this later
             </button>
           </div>
         </div>
@@ -405,7 +405,7 @@ export default function OnboardingPage() {
       <div className="min-h-screen bg-ink flex items-center justify-center px-6">
         <div className="max-w-md w-full text-center space-y-8">
           <div className="space-y-3">
-            <p className="font-sans text-xs tracking-widest uppercase text-gilt/60">You're all set</p>
+            <p className="font-sans text-xs tracking-widest uppercase text-gilt/60">You&apos;re all set</p>
             <h2 className="font-serif text-5xl text-parchment">Your brand is ready.</h2>
             <p className="font-sans text-sm text-stone leading-relaxed">
               Every listing card, flyer, open house visual, and social post will now use your brand automatically. Create your first listing to see it in action.
