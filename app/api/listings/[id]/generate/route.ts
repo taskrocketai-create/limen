@@ -1,328 +1,199 @@
-import { NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
+import Anthropic from "@anthropic-ai/sdk";
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-function buildPrompt(data: {
-  address: string;
-  price: number | null;
-  bedrooms: number | null;
-  bathrooms: number | null;
-  sqft: number | null;
-  lot_size: string | null;
-  year_built: number | null;
-  property_type: string | null;
-  highlights: string[];
-  recent_updates: string | null;
-  neighborhood_notes: string | null;
-  hoa_details: string | null;
-  seller_notes: string | null;
-}): string {
-  const specs = [
-    data.bedrooms != null && `${data.bedrooms} bedrooms`,
-    data.bathrooms != null && `${data.bathrooms} bathrooms`,
-    data.sqft != null && `${data.sqft.toLocaleString()} sq ft`,
-    data.lot_size && `lot: ${data.lot_size}`,
-    data.year_built && `built ${data.year_built}`,
-  ]
-    .filter(Boolean)
-    .join(", ");
-
-  return `You are a professional real estate copywriter specialising in high-quality listing content for residential properties.
-
-Generate comprehensive listing content for the following property. All copy must be specific — never use generic filler.
-
----
-PROPERTY: ${data.address}
-${data.property_type ? `TYPE: ${data.property_type.replace("_", " ")}` : ""}
-${data.price ? `PRICE: $${data.price.toLocaleString()}` : ""}
-SPECS: ${specs || "Not provided"}
-${data.highlights.length > 0 ? `HIGHLIGHTS: ${data.highlights.join(", ")}` : ""}
-${data.recent_updates ? `RECENT UPDATES: ${data.recent_updates}` : ""}
-${data.neighborhood_notes ? `NEIGHBOURHOOD: ${data.neighborhood_notes}` : ""}
-${data.hoa_details ? `HOA: ${data.hoa_details}` : ""}
-${data.seller_notes ? `SELLER NOTES: ${data.seller_notes}` : ""}
----
-
-Return ONLY valid JSON in this exact shape — no markdown, no preamble:
-
-{
-  "listing_description": "...",
-  "headline_variants": ["...", "...", "..."],
-  "social_captions": {
-    "instagram": "...",
-    "facebook": "...",
-    "twitter": "...",
-    "tiktok": "...",
-    "linkedin": "...",
-    "nextdoor": "..."
-  },
-  "platform_content": {
-    "mls": {
-      "description": "...",
-      "agent_remarks": "...",
-      "highlights": ["...", "...", "...", "...", "..."]
-    },
-    "zillow": {
-      "description": "...",
-      "highlights": ["...", "...", "...", "...", "..."],
-      "what_i_love": "..."
-    },
-    "realtor_com": {
-      "description": "...",
-      "highlights": ["...", "...", "...", "...", "..."]
-    },
-    "google": {
-      "post": "..."
-    }
-  },
-  "compliance_notes": "..."
-}
-
-Rules:
-- listing_description: 150-250 words. Warm, specific, no clichés. Lead with the strongest feature. End with location context.
-- headline_variants: exactly 3 distinct headline options, each under 12 words. Elegant and evocative, not salesy.
-- instagram: 100-150 words, conversational and aspirational. Include 10-15 relevant hashtags at end.
-- facebook: 120-180 words. Informational and shareable. Include key specs. Friendly tone.
-- twitter: under 240 characters including address. Punchy and specific.
-- tiktok: a video script outline, 60-90 seconds. Include hook, 3 key moments to show, and closing call to action. Format as walking-through narration a realtor would say on camera.
-- linkedin: 100-150 words. Professional tone. Focus on investment value, neighborhood growth, and property specs.
-- nextdoor: 80-120 words. Hyper-local, neighborly tone. Reference the neighborhood, nearby amenities, and community feel.
-- mls.description: 200-500 characters. Factual, spec-forward, no first-person. Standard MLS style.
-- mls.agent_remarks: 100-200 characters. Agent-to-agent notes about showing instructions, special features, or offers.
-- mls.highlights: exactly 5 bullet points, each under 10 words. Key selling points only.
-- zillow.description: up to 2500 characters. Warm and detailed. Zillow buyers want the full story.
-- zillow.highlights: exactly 5 bullet points matching Zillow home highlight format.
-- zillow.what_i_love: 50-100 words. First-person from the seller's perspective. Emotional and specific.
-- realtor_com.description: 200-400 words. Similar to Zillow but slightly more formal.
-- realtor_com.highlights: exactly 5 bullet points.
-- google.post: 100-150 words. Suitable for a Google Business Profile update. Include call to action.
-- Never mention the realtor name or brokerage.
-- Never include price unless provided above.
-
-FAIR HOUSING SELF-REVIEW — before returning your JSON, review every piece of copy you wrote and:
-1. Remove or rewrite any language that references race, color, national origin, religion, sex, familial status, or disability — directly or indirectly.
-2. Rewrite phrases like "perfect for families", "safe neighborhood", "exclusive area", "walking distance to church/synagogue/mosque", "quiet street" (if implying demographics), "great schools" (unless citing a verifiable source).
-3. Remove any unsupported claims about investment returns, appreciation, crime rates, or school quality rankings.
-4. Replace demographic steering language with factual, property-specific descriptions.
-5. In the "compliance_notes" field, list any specific phrases you rewrote and what you changed them to. If nothing needed changing, write "All content reviewed. No Fair Housing issues found."
-
-The goal: every piece of copy must be something a licensed real estate attorney would approve.`;
-
-}
+const PLAN_LIMITS: Record<string, number> = {
+  solo: 5,
+  publish: 25,
+  pro: Infinity,
+};
 
 export async function POST(
-  _req: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data: listing } = await supabase
-    .from("listings")
-    .select(
-      "id, realtor_id, address_line1, address_line2, city, state, zip, price, bedrooms, bathrooms, sqft, lot_size, year_built, property_type, status"
-    )
-    .eq("id", params.id)
-    .eq("realtor_id", user.id)
-    .single();
+  const { platform } = await request.json();
 
-  if (!listing) return NextResponse.json({ error: "Not found." }, { status: 404 });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: profile } = await (supabase as any)
+    .from("profiles")
+    .select("brand_profile, ai_image_generations_used, ai_image_generations_reset_at, stripe_subscription_status")
+    .eq("id", user.id)
+    .single() as {
+      data: {
+        brand_profile: Record<string, string> | null;
+        ai_image_generations_used: number;
+        ai_image_generations_reset_at: string | null;
+        stripe_subscription_status: string | null;
+      } | null
+    };
 
-  const allowedStatuses = ["intake_received", "ai_ready", "reviewed"];
-  if (!allowedStatuses.includes(listing.status)) {
-    return NextResponse.json(
-      { error: "Homeowner intake must be completed before generating copy." },
-      { status: 422 }
-    );
+  // Check monthly limit
+  const now = new Date();
+  const resetAt = profile?.ai_image_generations_reset_at ? new Date(profile.ai_image_generations_reset_at) : null;
+  const needsReset = !resetAt || now.getMonth() !== resetAt.getMonth() || now.getFullYear() !== resetAt.getFullYear();
+  const generationsUsed = needsReset ? 0 : (profile?.ai_image_generations_used ?? 0);
+  const limit = PLAN_LIMITS.solo; // TODO: expand per plan
+  
+  if (generationsUsed >= limit) {
+    return NextResponse.json({
+      error: `You've used all ${limit} regenerations this month. Upgrade to Publish for 25/month or Pro for unlimited.`,
+      used: generationsUsed,
+      limit,
+    }, { status: 429 });
   }
 
-  const { data: details } = await supabase
-    .from("listing_details")
-    .select("highlights, recent_updates, neighborhood_notes, hoa_details, seller_notes")
-    .eq("listing_id", params.id)
-    .single();
-
-  // Fetch up to 5 listing photos for vision analysis
-  const { data: assets } = await supabase
-    .from("listing_assets")
-    .select("storage_path")
-    .eq("listing_id", params.id)
-    .eq("asset_type", "photo")
-    .order("sort_order", { ascending: true })
-    .limit(5);
-
-  // Download photos and convert to base64 for vision
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  type ImageBlock = {
-    type: "image";
-    source: {
-      type: "base64";
-      media_type: "image/jpeg" | "image/png" | "image/webp" | "image/gif";
-      data: string;
+  // Fetch listing
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: listing } = await (supabase as any)
+    .from("listings")
+    .select("address_line1, city, state, zip, price, bedrooms, bathrooms, sqft, listing_details, realtor_id, ai_outputs(*)")
+    .eq("id", params.id)
+    .single() as {
+      data: {
+        address_line1: string; city: string; state: string; zip: string;
+        price: number | null; bedrooms: number | null; bathrooms: number | null; sqft: number | null;
+        listing_details: Record<string, unknown> | null;
+        realtor_id: string;
+        ai_outputs: Array<{ description?: string }>;
+      } | null
     };
-  };
-  const photoContents: ImageBlock[] = [];
 
-  if (assets && assets.length > 0) {
-    for (const asset of assets) {
-      try {
-        const photoUrl = `${supabaseUrl}/storage/v1/object/public/listing-assets/${asset.storage_path}`;
-        const res = await fetch(photoUrl);
-        if (!res.ok) continue;
-        const buffer = await res.arrayBuffer();
-        const base64 = Buffer.from(buffer).toString("base64");
-        const rawType = res.headers.get("content-type")?.split(";")[0] ?? "image/jpeg";
-        const validTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"] as const;
-        const mediaType = validTypes.includes(rawType as typeof validTypes[number])
-          ? (rawType as typeof validTypes[number])
-          : "image/jpeg";
-        photoContents.push({
-          type: "image",
-          source: { type: "base64", media_type: mediaType, data: base64 },
-        });
-      } catch {
-        // Skip failed photo downloads
+  if (!listing) return NextResponse.json({ error: "Listing not found" }, { status: 404 });
+  if (listing.realtor_id !== user.id) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+
+  const brand = profile?.brand_profile ?? {};
+  const details = listing.listing_details ?? {};
+  const highlights = Array.isArray(details.highlights) ? (details.highlights as string[]).join(", ") : "";
+  const neighborhood = typeof details.neighborhood === "string" ? details.neighborhood : "";
+  const recentUpdates = typeof details.recent_updates === "string" ? details.recent_updates : "";
+  const address = `${listing.address_line1}, ${listing.city}, ${listing.state} ${listing.zip}`;
+  const latestOutput = listing.ai_outputs?.[listing.ai_outputs.length - 1];
+  const existingDescription = latestOutput?.description ?? "";
+
+  // Platform-specific caption style
+  const platformStyles: Record<string, string> = {
+    facebook: "conversational, 150-200 words, no hashtags, warm and community-focused",
+    instagram: "punchy opener, 3-5 lines, then 5-8 relevant hashtags",
+    tiktok: "hook + 3 talking points, 60-second walkthrough script",
+    twitter: "max 240 characters, punchy and direct",
+    linkedin: "professional, market-aware, 100-150 words",
+    nextdoor: "neighbor-to-neighbor tone, hyperlocal, 100-150 words",
+  };
+
+  const captionStyle = platformStyles[platform] ?? platformStyles.facebook;
+
+  // Build brand creative brief from questionnaire answers
+  const brandBrief = brand ? `
+Agent brand profile:
+- Market focus: ${brand.tone ?? "professional"}
+- Style: ${brand.card_style ?? "clean"}
+- Badge: ${brand.badge_text ?? "Just Listed"}
+- Design notes: ${brand.design_notes ?? "Professional real estate marketing"}
+- Tagline style: ${brand.tagline_style ?? "Clear and compelling"}
+` : "";
+
+  // Generate image prompt + caption together
+  const combinedRes = await anthropic.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 800,
+    system: `You are a senior creative director at a top real estate marketing agency. 
+You generate compelling image prompts and platform captions that feel premium, not generic.
+Always respond with valid JSON only.`,
+    messages: [{
+      role: "user",
+      content: `Create a marketing package for this listing:
+
+Property: ${address}
+Price: ${listing.price ? `$${listing.price.toLocaleString()}` : "Call for price"}
+Beds/Baths/Sqft: ${listing.bedrooms ?? "?"}bd / ${listing.bathrooms ?? "?"}ba / ${listing.sqft?.toLocaleString() ?? "?"}sf
+Highlights: ${highlights}
+Recent updates: ${recentUpdates}
+Neighborhood: ${neighborhood}
+${existingDescription ? `Property description: ${existingDescription.slice(0, 400)}` : ""}
+${brandBrief}
+
+Platform: ${platform}
+Caption style: ${captionStyle}
+
+Return JSON with exactly these two fields:
+{
+  "imagePrompt": "A detailed Flux image generation prompt (150-200 words) for a stunning real estate marketing hero image of this specific property. Reference the actual property details, location feel, and highlights. Specify lighting, mood, and angle. End with: professional real estate photography, 8K resolution, wide angle lens, magazine quality",
+  "caption": "The ${platform} caption following the style guidelines above"
+}`
+    }],
+  });
+
+  const text = combinedRes.content[0].type === "text" ? combinedRes.content[0].text : "{}";
+  let imagePrompt = "";
+  let caption = "";
+
+  try {
+    const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
+    imagePrompt = parsed.imagePrompt ?? "";
+    caption = parsed.caption ?? "";
+  } catch {
+    return NextResponse.json({ error: "Failed to generate content. Please try again." }, { status: 500 });
+  }
+
+  // Generate image via Replicate Flux
+  let imageUrl: string | null = null;
+  if (process.env.REPLICATE_API_TOKEN && imagePrompt) {
+    try {
+      const replicateRes = await fetch("https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.REPLICATE_API_TOKEN}`,
+          "Content-Type": "application/json",
+          "Prefer": "wait",
+        },
+        body: JSON.stringify({
+          input: {
+            prompt: imagePrompt,
+            num_outputs: 1,
+            aspect_ratio: "4:3",
+            output_format: "webp",
+            output_quality: 90,
+          }
+        }),
+      });
+
+      const replicateData = await replicateRes.json();
+      if (Array.isArray(replicateData.output) && replicateData.output[0]) {
+        imageUrl = replicateData.output[0];
+      } else if (typeof replicateData.output === "string") {
+        imageUrl = replicateData.output;
       }
+    } catch (err) {
+      console.error("Replicate error:", err);
+      // Continue without image — caption still works
     }
   }
 
-  const { data: latestOutput } = await supabase
-    .from("ai_outputs")
-    .select("version")
-    .eq("listing_id", params.id)
-    .order("version", { ascending: false })
-    .limit(1)
-    .single();
-
-  const nextVersion = (latestOutput?.version ?? 0) + 1;
-
-  const address = [
-    listing.address_line1,
-    listing.address_line2,
-    `${listing.city}, ${listing.state} ${listing.zip}`,
-  ]
-    .filter(Boolean)
-    .join(", ");
-
-  const prompt = buildPrompt({
-    address,
-    price: listing.price,
-    bedrooms: listing.bedrooms,
-    bathrooms: listing.bathrooms,
-    sqft: listing.sqft,
-    lot_size: listing.lot_size,
-    year_built: listing.year_built,
-    property_type: listing.property_type,
-    highlights: details?.highlights ?? [],
-    recent_updates: details?.recent_updates ?? null,
-    neighborhood_notes: details?.neighborhood_notes ?? null,
-    hoa_details: details?.hoa_details ?? null,
-    seller_notes: details?.seller_notes ?? null,
-  });
-
-  let parsed: {
-    listing_description: string;
-    headline_variants: string[];
-    social_captions: {
-      instagram: string;
-      facebook: string;
-      twitter: string;
-      tiktok: string;
-      linkedin: string;
-      nextdoor: string;
-    };
-    platform_content: {
-      mls: { description: string; agent_remarks: string; highlights: string[] };
-      zillow: { description: string; highlights: string[]; what_i_love: string };
-      realtor_com: { description: string; highlights: string[] };
-      google: { post: string };
-    };
-    compliance_notes: string;
-  };
-
-  try {
-    const userContent: Anthropic.MessageParam["content"] = [
-      ...photoContents,
-      {
-        type: "text",
-        text: photoContents.length > 0
-          ? `I'm sharing ${photoContents.length} photo(s) of this property. Please analyze what you see in the photos — flooring types, finishes, room conditions, natural light, kitchen and bathroom quality, outdoor spaces, and any standout features — and incorporate these specific visual observations into all the copy you generate. Do not make assumptions beyond what's visible. Now generate the listing content:\n\n${prompt}`
-          : prompt,
-      },
-    ];
-
-    const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 4096,
-      system:
-        "You are a professional real estate copywriter with expert visual analysis skills. Always respond with valid JSON only — no markdown code fences, no preamble.",
-      messages: [{ role: "user", content: userContent }],
-    });
-
-    const text =
-      message.content[0].type === "text" ? message.content[0].text : "";
-    parsed = JSON.parse(text);
-  } catch (err) {
-    console.error("Anthropic generation error:", err);
-    return NextResponse.json(
-      { error: "AI generation failed. Please try again." },
-      { status: 502 }
-    );
-  }
-
-  const { data: newOutput, error: insertError } = await supabase
-    .from("ai_outputs")
-    .insert({
-      listing_id: params.id,
-      version: nextVersion,
-      listing_description: parsed.listing_description,
-      headline_variants: parsed.headline_variants,
-      social_captions: parsed.social_captions,
-      platform_content: parsed.platform_content,
-    })
-    .select("id, version, listing_description, headline_variants, social_captions, platform_content, generated_at, approved, approved_at")
-    .single();
-
-  if (insertError || !newOutput) {
-    console.error("ai_outputs insert error:", JSON.stringify(insertError));
-    return NextResponse.json({ error: "Failed to save output." }, { status: 500 });
-  }
-
-  // Save platform_content and compliance_notes via separate update
+  // Update usage count
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (supabase as any)
-    .from("ai_outputs")
+    .from("profiles")
     .update({
-      platform_content: parsed.platform_content,
-      compliance_notes: parsed.compliance_notes ?? "All content reviewed. No Fair Housing issues found.",
+      ai_image_generations_used: needsReset ? 1 : generationsUsed + 1,
+      ai_image_generations_reset_at: needsReset ? now.toISOString() : profile?.ai_image_generations_reset_at,
     })
-    .eq("id", newOutput.id);
+    .eq("id", user.id);
 
-  if (listing.status === "intake_received") {
-    await supabase
-      .from("listings")
-      .update({ status: "ai_ready" })
-      .eq("id", params.id);
-
-    await supabase.from("notifications").insert({
-      realtor_id: user.id,
-      listing_id: params.id,
-      type: "ai_ready",
-      message: `AI listing copy v${nextVersion} is ready for review.`,
-    });
-  }
+  const newUsed = needsReset ? 1 : generationsUsed + 1;
 
   return NextResponse.json({
-    ...newOutput,
-    social_captions: parsed.social_captions,
-    platform_content: parsed.platform_content,
-    compliance_notes: parsed.compliance_notes ?? "All content reviewed. No Fair Housing issues found.",
+    imageUrl,
+    caption,
+    imagePrompt,
+    used: newUsed,
+    limit,
+    remaining: limit === Infinity ? "unlimited" : limit - newUsed,
   });
 }
