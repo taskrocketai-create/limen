@@ -288,6 +288,7 @@ export function VariationPostcard({ photos, address, caption, price, bedrooms, b
             <div style={{ fontFamily: "Georgia, serif", fontSize: isVertical ? "20px" : "16px", color: b.accent, lineHeight: 1, textAlign: "right" }}>{priceStr}</div>
           )}
         </div>
+        {caption && <div style={{ fontSize: isVertical ? "9px" : "8px", color: "rgba(255,255,255,0.5)", fontFamily: "Georgia, serif", fontStyle: "italic", lineHeight: 1.5, marginTop: "4px", marginBottom: "6px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{caption}</div>}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ fontSize: isVertical ? "9px" : "8px", color: b.accent, letterSpacing: "1px" }}>{specs}</div>
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
