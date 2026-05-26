@@ -75,6 +75,7 @@ interface PlatformPanelProps {
   agentWebsite?: string;
   logoUrl?: string | null;
   headshotUrl?: string | null;
+  aiImageUrl?: string | null;
 }
 
 function CopyButton({ text }: { text: string }) {
@@ -205,6 +206,33 @@ export default function PlatformPanel({ social_captions, platform_content, photo
   };
 
   const [regenError, setRegenError] = useState<string | null>(null);
+  const [aiImageUrl, setAiImageUrl] = useState<string | null>(null);
+  const [generatingAiImage, setGeneratingAiImage] = useState(false);
+  const [aiImageUsage, setAiImageUsage] = useState<{ used: number; limit: number | string; remaining: number | string } | null>(null);
+  const [aiImageError, setAiImageError] = useState<string | null>(null);
+
+  const handleGenerateAiImage = async () => {
+    if (!listingId) return;
+    setGeneratingAiImage(true);
+    setAiImageError(null);
+    try {
+      const res = await fetch(`/api/listings/${listingId}/generate-ai-image`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json();
+      if (data.imageUrl) {
+        setAiImageUrl(data.imageUrl);
+        setAiImageUsage({ used: data.used, limit: data.limit, remaining: data.remaining });
+      } else {
+        setAiImageError(data.error ?? "Failed to generate image.");
+      }
+    } catch {
+      setAiImageError("Network error. Please try again.");
+    } finally {
+      setGeneratingAiImage(false);
+    }
+  };
 
   const handleRegenerate = async (platform: string) => {
     if (!listingId) {
@@ -258,9 +286,25 @@ export default function PlatformPanel({ social_captions, platform_content, photo
         >
           {regeneratingOverlay === platform ? <><span className="animate-spin inline-block">↺</span> Switching…</> : <>✨ Next design</>}
         </button>
+        <button
+          onClick={handleGenerateAiImage}
+          disabled={generatingAiImage}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-ink text-gilt border border-ink rounded font-sans text-xs hover:bg-gilt hover:text-ink transition-colors disabled:opacity-50"
+        >
+          {generatingAiImage ? <><span className="animate-spin inline-block">✦</span> Generating…</> : <>✦ AI image</>}
+        </button>
       </div>
-      {regenError && (
-        <p className="font-sans text-xs text-red-500">{regenError}</p>
+      {regenError && <p className="font-sans text-xs text-red-500">{regenError}</p>}
+      {aiImageError && <p className="font-sans text-xs text-red-500">{aiImageError}</p>}
+      {aiImageUsage && (
+        <p className="font-sans text-xs text-stone/60">
+          AI images: {aiImageUsage.used} used · {aiImageUsage.remaining === "unlimited" ? "unlimited remaining" : `${aiImageUsage.remaining} remaining this month`}
+        </p>
+      )}
+      {aiImageUrl && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded font-sans text-xs text-green-700">
+          ✓ AI image generated — showing on card below
+        </div>
       )}
     </div>
   );
@@ -389,7 +433,7 @@ export default function PlatformPanel({ social_captions, platform_content, photo
                   </div>
                 )
               )}
-              <FacebookPreview caption={getCaption("facebook")} currentVariation={getVariation("facebook")} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} headshotUrl={headshotUrl} />
+              <FacebookPreview caption={getCaption("facebook")} currentVariation={getVariation("facebook")} aiImageUrl={aiImageUrl} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} headshotUrl={headshotUrl} />
             </div>
           )}
 
@@ -419,7 +463,7 @@ export default function PlatformPanel({ social_captions, platform_content, photo
                   </div>
                 )
               )}
-              <InstagramPreview caption={getCaption("instagram")} currentVariation={getVariation("instagram")} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} headshotUrl={headshotUrl} />
+              <InstagramPreview caption={getCaption("instagram")} currentVariation={getVariation("instagram")} aiImageUrl={aiImageUrl} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} headshotUrl={headshotUrl} />
             </div>
           )}
 
@@ -430,7 +474,7 @@ export default function PlatformPanel({ social_captions, platform_content, photo
                 <p className="font-sans text-xs text-stone">Walking-tour script. Download the card as your TikTok cover image.</p>
                 <RegenButtons platform="tiktok" />
               </div>
-              <TikTokPreview caption={getCaption("tiktok")} currentVariation={getVariation("tiktok")} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} headshotUrl={headshotUrl} />
+              <TikTokPreview caption={getCaption("tiktok")} currentVariation={getVariation("tiktok")} aiImageUrl={aiImageUrl} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} headshotUrl={headshotUrl} />
             </div>
           )}
 
@@ -441,7 +485,7 @@ export default function PlatformPanel({ social_captions, platform_content, photo
                 <p className="font-sans text-xs text-stone">Professional reach — ideal for move-up buyers and investors.</p>
                 <RegenButtons platform="linkedin" />
               </div>
-              <LinkedInPreview caption={getCaption("linkedin")} currentVariation={getVariation("linkedin")} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} headshotUrl={headshotUrl} />
+              <LinkedInPreview caption={getCaption("linkedin")} currentVariation={getVariation("linkedin")} aiImageUrl={aiImageUrl} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} headshotUrl={headshotUrl} />
             </div>
           )}
 
@@ -452,7 +496,7 @@ export default function PlatformPanel({ social_captions, platform_content, photo
                 <p className="font-sans text-xs text-stone">Post in the For Sale section of your neighborhood feed.</p>
                 <RegenButtons platform="nextdoor" />
               </div>
-              <NextdoorPreview caption={getCaption("nextdoor")} currentVariation={getVariation("nextdoor")} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} headshotUrl={headshotUrl} />
+              <NextdoorPreview caption={getCaption("nextdoor")} currentVariation={getVariation("nextdoor")} aiImageUrl={aiImageUrl} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} headshotUrl={headshotUrl} />
             </div>
           )}
 
@@ -474,7 +518,7 @@ export default function PlatformPanel({ social_captions, platform_content, photo
                 <p className="font-sans text-xs text-stone">Download the card or copy the text. Attach your cover photo.</p>
                 <RegenButtons platform="twitter" />
               </div>
-              <TwitterPreview caption={getCaption("twitter")} currentVariation={getVariation("twitter")} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} headshotUrl={headshotUrl} />
+              <TwitterPreview caption={getCaption("twitter")} currentVariation={getVariation("twitter")} aiImageUrl={aiImageUrl} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} headshotUrl={headshotUrl} />
             </div>
           )}
         </div>
