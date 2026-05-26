@@ -179,6 +179,7 @@ export function VariationSplit({ photos, address, caption, price, bedrooms, bath
     return (
       <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", fontFamily: serif ? "Georgia, serif" : "'DM Sans', sans-serif" }}>
         <div style={{ flex: "0 0 62%", position: "relative", overflow: "hidden" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           {cover && <img src={cover.url} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
           <div style={{ position: "absolute", top: "14px", left: "14px", right: "14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <Logo logoUrl={logoUrl} agentName={agentName} height="24px" />
