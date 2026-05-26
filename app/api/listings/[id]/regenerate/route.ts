@@ -17,14 +17,21 @@ export async function POST(
 ) {
   const { platform } = await request.json();
 
-  // Fetch listing
+  // Fetch listing — no listing_details column, that's a separate table
   const { data: listing } = await supabase
     .from("listings")
-    .select("address_line1, city, state, zip, price, bedrooms, bathrooms, sqft, listing_details")
+    .select("address_line1, city, state, zip, price, bedrooms, bathrooms, sqft")
     .eq("id", params.id)
     .maybeSingle();
 
   if (!listing) return NextResponse.json({ error: "Listing not found" }, { status: 404 });
+
+  // Fetch listing details from the separate listing_details table
+  const { data: listingDetails } = await supabase
+    .from("listing_details")
+    .select("highlights, neighborhood, recent_updates")
+    .eq("listing_id", params.id)
+    .maybeSingle();
 
   // Fetch latest description
   const { data: latestOutput } = await supabase
@@ -35,10 +42,13 @@ export async function POST(
     .limit(1)
     .maybeSingle();
 
-  const details = listing.listing_details ?? {};
-  const highlights = Array.isArray(details.highlights) ? details.highlights.join(", ") : "";
-  const neighborhood = typeof details.neighborhood === "string" ? details.neighborhood : "";
-  const recentUpdates = typeof details.recent_updates === "string" ? details.recent_updates : "";
+  const highlights = Array.isArray(listingDetails?.highlights)
+    ? listingDetails.highlights.join(", ")
+    : typeof listingDetails?.highlights === "string"
+    ? listingDetails.highlights
+    : "";
+  const neighborhood = listingDetails?.neighborhood ?? "";
+  const recentUpdates = listingDetails?.recent_updates ?? "";
   const existingDescription = latestOutput?.listing_description ?? "";
   const address = `${listing.address_line1}, ${listing.city}, ${listing.state} ${listing.zip}`;
 
