@@ -19,6 +19,8 @@ export interface CardVariationProps {
   sqft?: number | null;
   brand?: BrandProfile | null;
   agentName?: string;
+  agentPhone?: string;
+  agentWebsite?: string;
   logoUrl?: string | null;
   isVertical?: boolean;
 }
@@ -63,7 +65,7 @@ function Logo({ logoUrl, agentName, height, filter }: { logoUrl?: string | null;
 // STYLE 1 — CINEMATIC
 // Full-bleed dark photo. Large centered serif address. Minimal. Editorial.
 // ===========================================================================
-export function VariationCinematic({ photos, address, caption, price, bedrooms, bathrooms, sqft, brand, agentName, logoUrl, isVertical }: CardVariationProps) {
+export function VariationCinematic({ photos, address, caption, price, bedrooms, bathrooms, sqft, brand, agentName, agentPhone, agentWebsite, logoUrl, isVertical }: CardVariationProps) {
   const cover = photos[0];
   const b = getBrand(brand);
   const shortAddress = address.split(",")[0];
@@ -126,7 +128,7 @@ export function VariationCinematic({ photos, address, caption, price, bedrooms, 
 // STYLE 2 — SPLIT PANEL
 // Photo left 60%, brand color panel right 40%. All info stacked in panel.
 // ===========================================================================
-export function VariationSplit({ photos, address, caption, price, bedrooms, bathrooms, sqft, brand, agentName, logoUrl, isVertical }: CardVariationProps) {
+export function VariationSplit({ photos, address, caption, price, bedrooms, bathrooms, sqft, brand, agentName, agentPhone, agentWebsite, logoUrl, isVertical }: CardVariationProps) {
   const cover = photos[0];
   const b = getBrand(brand);
   const shortAddress = address.split(",")[0];
@@ -154,7 +156,11 @@ export function VariationSplit({ photos, address, caption, price, bedrooms, bath
           <div>
             {specs && <div style={{ fontSize: "9px", color: b.accent, letterSpacing: "1px", marginBottom: "8px" }}>{specs}</div>}
             <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <div style={{ fontSize: "8px", color: "rgba(255,255,255,0.5)" }}>{agentName ?? ""}</div>
+              <div style={{ fontSize: "8px", color: "rgba(255,255,255,0.5)" }}>
+                {agentName ?? ""}
+                {agentPhone && <span style={{ marginLeft: "8px" }}>{agentPhone}</span>}
+                {agentWebsite && <span style={{ marginLeft: "8px" }}>{agentWebsite.replace(/^https?:\/\//, "")}</span>}
+              </div>
               <div style={{ fontSize: "6px", color: "rgba(255,255,255,0.2)", letterSpacing: "1px", textTransform: "uppercase" }}>Powered by Limen</div>
             </div>
           </div>
@@ -194,7 +200,7 @@ export function VariationSplit({ photos, address, caption, price, bedrooms, bath
 // STYLE 3 — BOLD HEADER
 // Giant color band top with huge price type. Photo fills bottom.
 // ===========================================================================
-export function VariationBoldHeader({ photos, address, caption, price, bedrooms, bathrooms, sqft, brand, agentName, logoUrl, isVertical }: CardVariationProps) {
+export function VariationBoldHeader({ photos, address, caption, price, bedrooms, bathrooms, sqft, brand, agentName, agentPhone, agentWebsite, logoUrl, isVertical }: CardVariationProps) {
   const cover = photos[0];
   const b = getBrand(brand);
   const shortAddress = address.split(",")[0];
@@ -231,7 +237,11 @@ export function VariationBoldHeader({ photos, address, caption, price, bedrooms,
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div style={{ fontSize: "9px", color: b.accent, letterSpacing: "1px" }}>{specs}</div>
             <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-              <span style={{ fontSize: "8px", color: "rgba(255,255,255,0.4)" }}>{agentName ?? ""}</span>
+              <span style={{ fontSize: "8px", color: "rgba(255,255,255,0.4)" }}>
+                {agentName ?? ""}
+                {agentPhone && <span style={{ marginLeft: "6px" }}>{agentPhone}</span>}
+                {agentWebsite && <span style={{ marginLeft: "6px" }}>{agentWebsite.replace(/^https?:\/\//, "")}</span>}
+              </span>
               <span style={{ fontSize: "6px", letterSpacing: "1px", textTransform: "uppercase", color: "rgba(255,255,255,0.2)" }}>Powered by Limen</span>
             </div>
           </div>
@@ -245,7 +255,7 @@ export function VariationBoldHeader({ photos, address, caption, price, bedrooms,
 // STYLE 4 — POSTCARD
 // White border frame around photo. Clean bottom strip. Classic print feel.
 // ===========================================================================
-export function VariationPostcard({ photos, address, caption, price, bedrooms, bathrooms, sqft, brand, agentName, logoUrl, isVertical }: CardVariationProps) {
+export function VariationPostcard({ photos, address, caption, price, bedrooms, bathrooms, sqft, brand, agentName, agentPhone, agentWebsite, logoUrl, isVertical }: CardVariationProps) {
   const cover = photos[0];
   const b = getBrand(brand);
   const shortAddress = address.split(",")[0];
@@ -292,7 +302,11 @@ export function VariationPostcard({ photos, address, caption, price, bedrooms, b
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ fontSize: isVertical ? "9px" : "8px", color: b.accent, letterSpacing: "1px" }}>{specs}</div>
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <span style={{ fontSize: "8px", color: "rgba(255,255,255,0.4)" }}>{agentName ?? ""}</span>
+            <span style={{ fontSize: "8px", color: "rgba(255,255,255,0.4)" }}>
+              {agentName ?? ""}
+              {agentPhone && <span style={{ marginLeft: "6px" }}>{agentPhone}</span>}
+              {agentWebsite && <span style={{ marginLeft: "6px" }}>{agentWebsite.replace(/^https?:\/\//, "")}</span>}
+            </span>
             <span style={{ fontSize: "6px", letterSpacing: "1px", textTransform: "uppercase", color: "rgba(255,255,255,0.2)" }}>Powered by Limen</span>
           </div>
         </div>
@@ -305,7 +319,7 @@ export function VariationPostcard({ photos, address, caption, price, bedrooms, b
 // STYLE 5 — MAGAZINE
 // Photo top half. Clean white bottom with large serif. Very professional.
 // ===========================================================================
-export function VariationMagazine({ photos, address, caption, price, bedrooms, bathrooms, sqft, brand, agentName, logoUrl, isVertical }: CardVariationProps) {
+export function VariationMagazine({ photos, address, caption, price, bedrooms, bathrooms, sqft, brand, agentName, agentPhone, agentWebsite, logoUrl, isVertical }: CardVariationProps) {
   const cover = photos[0];
   const b = getBrand(brand);
   const shortAddress = address.split(",")[0];
@@ -357,7 +371,11 @@ export function VariationMagazine({ photos, address, caption, price, bedrooms, b
               {sqft && <div style={{ textAlign: "center" }}><div style={{ fontSize: isVertical ? "14px" : "11px", fontWeight: "600", color: "#1A1814" }}>{sqft.toLocaleString()}</div><div style={{ fontSize: "7px", color: "#6B6456", letterSpacing: "1px", textTransform: "uppercase" }}>Sq Ft</div></div>}
             </div>
             <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: "8px", color: "#6B6456" }}>{agentName ?? ""}</div>
+              <div style={{ fontSize: "8px", color: "#6B6456" }}>
+                {agentName ?? ""}
+                {agentPhone && <span style={{ marginLeft: "6px" }}>{agentPhone}</span>}
+                {agentWebsite && <span style={{ marginLeft: "6px" }}>{agentWebsite.replace(/^https?:\/\//, "")}</span>}
+              </div>
               <div style={{ fontSize: "6px", color: "#bbb", letterSpacing: "1px", textTransform: "uppercase" }}>Powered by Limen</div>
             </div>
           </div>
