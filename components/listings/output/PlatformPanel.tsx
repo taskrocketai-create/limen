@@ -260,6 +260,7 @@ export default function PlatformPanel({ social_captions, platform_content, photo
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleRegenerateOverlay = (_platform: string) => {
     const current = overlayIndexes[_platform] ?? 0;
     const next = (current + 1) % VARIATION_ORDER.length;
