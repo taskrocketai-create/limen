@@ -42,6 +42,7 @@ interface MarketingCardProps {
   agentWebsite?: string;
   logoUrl?: string | null;
   headshotUrl?: string | null;
+  currentVariation?: VariationType;
   platform: "facebook" | "instagram" | "tiktok" | "twitter" | "linkedin" | "nextdoor";
 }
 
@@ -75,11 +76,21 @@ function DownloadButton({ cardRef, filename }: { cardRef: React.RefObject<HTMLDi
     setLoading(true);
     try {
       const html2canvas = (await import("html2canvas")).default;
-      const canvas = await html2canvas(cardRef.current, {
+      const el = cardRef.current;
+      const rect = el.getBoundingClientRect();
+      const canvas = await html2canvas(el, {
         useCORS: true,
         allowTaint: true,
         scale: 2,
         backgroundColor: null,
+        width: rect.width,
+        height: rect.height,
+        windowWidth: rect.width,
+        windowHeight: rect.height,
+        scrollX: 0,
+        scrollY: 0,
+        x: 0,
+        y: 0,
       });
       const link = document.createElement("a");
       link.download = filename;
@@ -105,8 +116,13 @@ function DownloadButton({ cardRef, filename }: { cardRef: React.RefObject<HTMLDi
 // ---------------------------------------------------------------------------
 function PlatformPreview(props: MarketingCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const [variation, setVariation] = useState<VariationType>("cinematic");
+  const [variation, setVariation] = useState<VariationType>(props.currentVariation ?? "cinematic");
   const config = PLATFORM_CONFIG[props.platform];
+
+  // Sync when parent changes variation via Regenerate overlay
+  if (props.currentVariation && props.currentVariation !== variation) {
+    setVariation(props.currentVariation);
+  }
   const filename = `${props.platform}-${variation}.png`;
   const isVertical = props.platform === "tiktok";
 
@@ -163,9 +179,11 @@ function PlatformPreview(props: MarketingCardProps) {
       <div
         ref={cardRef}
         className="rounded-lg overflow-hidden max-w-sm mx-auto shadow-lg"
-        style={{ aspectRatio: config.aspect }}
+        style={{ aspectRatio: config.aspect, position: "relative" }}
       >
-        <CardVariation variation={variation} {...variationProps} />
+        <div style={{ position: "absolute", inset: 0 }}>
+          <CardVariation variation={variation} {...variationProps} />
+        </div>
       </div>
 
       {/* Caption for copying */}
