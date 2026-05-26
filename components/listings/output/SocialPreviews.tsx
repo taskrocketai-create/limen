@@ -2,6 +2,8 @@
 
 import { useRef, useState } from "react";
 
+import { CardVariation, VARIATION_LABELS, type VariationType, type CardVariationProps } from "@/components/listings/output/CardVariations";
+
 export interface BrandProfile {
   brand_name?: string;
   primary_color?: string;
@@ -108,204 +110,30 @@ function DownloadButton({ cardRef, filename }: { cardRef: React.RefObject<HTMLDi
 }
 
 // ---------------------------------------------------------------------------
-// The Marketing Card — one design, rendered at different sizes
 // ---------------------------------------------------------------------------
-function MarketingCard({ photos, address, price, bedrooms, bathrooms, sqft, brand, agentName, logoUrl, platform }: MarketingCardProps) {
-  const cover = photos[0];
-  const theme = getBrandTheme(brand);
-  const config = PLATFORM_CONFIG[platform];
-  const isVertical = platform === "tiktok";
-  const shortAddress = address.split(",")[0];
-  const cityState = address.split(",").slice(1, 3).join(",").trim();
-  const priceStr = price ? `$${price.toLocaleString()}` : null;
-  const specs = [
-    bedrooms && `${bedrooms} bd`,
-    bathrooms && `${bathrooms} ba`,
-    sqft && `${sqft.toLocaleString()} sf`,
-  ].filter(Boolean).join("  ·  ");
-
-  return (
-    <div
-      style={{
-        position: "relative",
-        width: "100%",
-        aspectRatio: config.aspect,
-        overflow: "hidden",
-        fontFamily: "'DM Sans', system-ui, sans-serif",
-        background: theme.primary,
-      }}
-    >
-      {/* Full-bleed listing photo */}
-      {cover && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={cover.url}
-          alt="Listing"
-          crossOrigin="anonymous"
-          style={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-          }}
-        />
-      )}
-
-      {/* Gradient overlay — bottom heavy */}
-      <div style={{
-        position: "absolute",
-        inset: 0,
-        background: isVertical
-          ? `linear-gradient(to top, ${theme.primary} 0%, ${theme.primary}cc 35%, transparent 65%)`
-          : `linear-gradient(to top, ${theme.primary} 0%, ${theme.primary}dd 40%, ${theme.primary}88 65%, transparent 90%)`,
-      }} />
-
-      {/* Top bar — logo + badge */}
-      <div style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        padding: isVertical ? "20px 20px" : "14px 18px",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "flex-start",
-      }}>
-        {/* Logo or agent initials */}
-        {logoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={logoUrl}
-            alt="Logo"
-            crossOrigin="anonymous"
-            style={{
-              height: isVertical ? "36px" : "28px",
-              maxWidth: "120px",
-              objectFit: "contain",
-              filter: "brightness(0) invert(1)",
-            }}
-          />
-        ) : (
-          <div style={{
-            fontFamily: "Georgia, serif",
-            fontSize: isVertical ? "15px" : "12px",
-            letterSpacing: "3px",
-            color: theme.accent,
-            textTransform: "uppercase",
-          }}>
-            {agentName?.split(" ").map(w => w[0]).join("") ?? "RE"}
-          </div>
-        )}
-
-        {/* Badge */}
-        <div style={{
-          background: theme.accent,
-          color: theme.primary,
-          fontSize: isVertical ? "11px" : "10px",
-          fontWeight: "600",
-          letterSpacing: "1.5px",
-          textTransform: "uppercase",
-          padding: isVertical ? "6px 14px" : "5px 12px",
-        }}>
-          {theme.badge}
-        </div>
-      </div>
-
-      {/* Bottom content */}
-      <div style={{
-        position: "absolute",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        padding: isVertical ? "24px 20px" : "16px 18px",
-      }}>
-        {/* Price */}
-        {priceStr && (
-          <div style={{
-            fontFamily: "Georgia, serif",
-            fontSize: isVertical ? "32px" : platform === "twitter" || platform === "linkedin" ? "22px" : "26px",
-            color: theme.accent,
-            lineHeight: 1,
-            marginBottom: "6px",
-            fontWeight: "400",
-          }}>
-            {priceStr}
-          </div>
-        )}
-
-        {/* Address */}
-        <div style={{
-          fontFamily: "Georgia, serif",
-          fontSize: isVertical ? "22px" : platform === "twitter" || platform === "linkedin" ? "16px" : "20px",
-          color: "#ffffff",
-          lineHeight: 1.2,
-          marginBottom: "3px",
-        }}>
-          {shortAddress}
-        </div>
-
-        <div style={{
-          fontSize: isVertical ? "13px" : "11px",
-          color: "rgba(255,255,255,0.65)",
-          marginBottom: specs ? "10px" : "0",
-        }}>
-          {cityState}
-        </div>
-
-        {/* Specs row */}
-        {specs && (
-          <div style={{
-            fontSize: isVertical ? "13px" : "11px",
-            color: theme.accent,
-            letterSpacing: "1px",
-            marginBottom: "12px",
-          }}>
-            {specs}
-          </div>
-        )}
-
-        {/* Divider */}
-        <div style={{
-          height: "1px",
-          background: "rgba(255,255,255,0.15)",
-          marginBottom: "10px",
-        }} />
-
-        {/* Agent name + powered by */}
-        <div style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}>
-          <div style={{
-            fontSize: isVertical ? "12px" : "10px",
-            color: "rgba(255,255,255,0.7)",
-            letterSpacing: "0.5px",
-          }}>
-            {agentName ?? ""}
-          </div>
-          <div style={{
-            fontSize: "8px",
-            color: "rgba(255,255,255,0.3)",
-            letterSpacing: "1px",
-            textTransform: "uppercase",
-          }}>
-            Powered by Limen
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Single platform preview wrapper
+// Single platform preview wrapper with variation selector
 // ---------------------------------------------------------------------------
 function PlatformPreview(props: MarketingCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
+  const [variation, setVariation] = useState<VariationType>("cinematic");
   const config = PLATFORM_CONFIG[props.platform];
-  const filename = `${props.platform}-listing.png`;
+  const filename = `${props.platform}-${variation}.png`;
+  const isVertical = props.platform === "tiktok";
+
+  const variationProps: CardVariationProps = {
+    photos: props.photos,
+    address: props.address,
+    price: props.price,
+    bedrooms: props.bedrooms,
+    bathrooms: props.bathrooms,
+    sqft: props.sqft,
+    brand: props.brand,
+    agentName: props.agentName,
+    logoUrl: props.logoUrl,
+    isVertical,
+  };
+
+  const variations = Object.entries(VARIATION_LABELS) as [VariationType, string][];
 
   return (
     <div className="space-y-3">
@@ -319,10 +147,34 @@ function PlatformPreview(props: MarketingCardProps) {
           <DownloadButton cardRef={cardRef} filename={filename} />
         </div>
       </div>
-      <div ref={cardRef} className="rounded-lg overflow-hidden max-w-sm mx-auto shadow-lg">
-        <MarketingCard {...props} />
+
+      {/* Style selector */}
+      <div className="flex flex-wrap gap-2">
+        {variations.map(([id, label]) => (
+          <button
+            key={id}
+            onClick={() => setVariation(id)}
+            className={`px-3 py-1.5 font-sans text-xs rounded-md transition-colors ${
+              variation === id
+                ? "bg-ink text-gilt"
+                : "border border-stone/20 text-stone hover:border-gilt hover:text-gilt"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
-      {/* Caption below card */}
+
+      {/* Card */}
+      <div
+        ref={cardRef}
+        className="rounded-lg overflow-hidden max-w-sm mx-auto shadow-lg"
+        style={{ aspectRatio: config.aspect }}
+      >
+        <CardVariation variation={variation} {...variationProps} />
+      </div>
+
+      {/* Caption */}
       <div className="bg-parchment rounded-md p-3 max-w-sm mx-auto">
         <p className="font-sans text-xs text-stone leading-relaxed line-clamp-4">{props.caption}</p>
       </div>
