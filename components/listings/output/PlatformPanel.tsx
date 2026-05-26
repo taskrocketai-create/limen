@@ -200,8 +200,6 @@ export default function PlatformPanel({ social_captions, platform_content, photo
     return captions[platform] ?? (social_captions as Record<string, string>)?.[platform] ?? "";
   };
 
-  const getPhotos = (_platform: string): Photo[] => photos;
-
   const getVariation = (platform: string): VariationType => {
     return VARIATION_ORDER[overlayIndexes[platform] ?? 0];
   };
@@ -373,7 +371,7 @@ export default function PlatformPanel({ social_captions, platform_content, photo
                   </div>
                 )
               )}
-              <FacebookPreview caption={getCaption("facebook")} photos={getPhotos(active ?? "")} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} headshotUrl={headshotUrl} />
+              <FacebookPreview caption={getCaption("facebook")} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} headshotUrl={headshotUrl} />
             </div>
           )}
 
@@ -403,7 +401,7 @@ export default function PlatformPanel({ social_captions, platform_content, photo
                   </div>
                 )
               )}
-              <InstagramPreview caption={getCaption("instagram")} photos={getPhotos(active ?? "")} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} headshotUrl={headshotUrl} />
+              <InstagramPreview caption={getCaption("instagram")} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} headshotUrl={headshotUrl} />
             </div>
           )}
 
@@ -414,7 +412,7 @@ export default function PlatformPanel({ social_captions, platform_content, photo
                 <p className="font-sans text-xs text-stone">Walking-tour script. Download the card as your TikTok cover image.</p>
                 <RegenButtons platform="tiktok" />
               </div>
-              <TikTokPreview caption={getCaption("tiktok")} photos={getPhotos(active ?? "")} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} headshotUrl={headshotUrl} />
+              <TikTokPreview caption={getCaption("tiktok")} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} headshotUrl={headshotUrl} />
             </div>
           )}
 
@@ -425,7 +423,7 @@ export default function PlatformPanel({ social_captions, platform_content, photo
                 <p className="font-sans text-xs text-stone">Professional reach — ideal for move-up buyers and investors.</p>
                 <RegenButtons platform="linkedin" />
               </div>
-              <LinkedInPreview caption={getCaption("linkedin")} photos={getPhotos(active ?? "")} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} headshotUrl={headshotUrl} />
+              <LinkedInPreview caption={getCaption("linkedin")} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} headshotUrl={headshotUrl} />
             </div>
           )}
 
@@ -436,7 +434,7 @@ export default function PlatformPanel({ social_captions, platform_content, photo
                 <p className="font-sans text-xs text-stone">Post in the For Sale section of your neighborhood feed.</p>
                 <RegenButtons platform="nextdoor" />
               </div>
-              <NextdoorPreview caption={getCaption("nextdoor")} photos={getPhotos(active ?? "")} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} headshotUrl={headshotUrl} />
+              <NextdoorPreview caption={getCaption("nextdoor")} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} headshotUrl={headshotUrl} />
             </div>
           )}
 
@@ -458,7 +456,7 @@ export default function PlatformPanel({ social_captions, platform_content, photo
                 <p className="font-sans text-xs text-stone">Download the card or copy the text. Attach your cover photo.</p>
                 <RegenButtons platform="twitter" />
               </div>
-              <TwitterPreview caption={getCaption("twitter")} photos={getPhotos(active ?? "")} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} headshotUrl={headshotUrl} />
+              <TwitterPreview caption={getCaption("twitter")} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} headshotUrl={headshotUrl} />
             </div>
           )}
         </div>
