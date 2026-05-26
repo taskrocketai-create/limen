@@ -76,6 +76,7 @@ const supabase = createClient(
       } | null
     };
 
+  console.log("LISTING QUERY RESULT:", JSON.stringify({ listing, listingId: params.id, userId: user.id }));
   if (!listing) return NextResponse.json({ error: "Listing not found" }, { status: 404 });
   if (listing.realtor_id !== user.id) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
