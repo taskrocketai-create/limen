@@ -47,6 +47,7 @@ function Logo({ logoUrl, agentName, height, filter }: { logoUrl?: string | null;
       // eslint-disable-next-line @next/next/no-img-element
       // eslint-disable-next-line @next/next/no-img-element
 
+      // eslint-disable-next-line @next/next/no-img-element
       <img src={logoUrl} alt="Logo" crossOrigin="anonymous"
         style={{ height, maxWidth: "120px", objectFit: "contain", filter: filter ?? "brightness(0) invert(1)" }} />
     );
@@ -76,6 +77,7 @@ export function VariationCinematic({ photos, address, caption, price, bedrooms, 
         // eslint-disable-next-line @next/next/no-img-element
         // eslint-disable-next-line @next/next/no-img-element
 
+        // eslint-disable-next-line @next/next/no-img-element
         <img src={cover.url} alt="" crossOrigin="anonymous"
           style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.5 }} />
       )}
@@ -219,6 +221,7 @@ export function VariationBoldHeader({ photos, address, caption, price, bedrooms,
           // eslint-disable-next-line @next/next/no-img-element
           // eslint-disable-next-line @next/next/no-img-element
 
+          // eslint-disable-next-line @next/next/no-img-element
           <img src={cover.url} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         ) : (
           <div style={{ width: "100%", height: "100%", background: "#2a2a28" }} />
@@ -260,6 +263,7 @@ export function VariationPostcard({ photos, address, caption, price, bedrooms, b
           // eslint-disable-next-line @next/next/no-img-element
           // eslint-disable-next-line @next/next/no-img-element
 
+          // eslint-disable-next-line @next/next/no-img-element
           <img src={cover.url} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         ) : (
           <div style={{ width: "100%", height: "100%", background: "#e8e4dc" }} />
@@ -317,6 +321,7 @@ export function VariationMagazine({ photos, address, caption, price, bedrooms, b
           // eslint-disable-next-line @next/next/no-img-element
           // eslint-disable-next-line @next/next/no-img-element
 
+          // eslint-disable-next-line @next/next/no-img-element
           <img src={cover.url} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         ) : (
           <div style={{ width: "100%", height: "100%", background: "#e8e4dc" }} />
