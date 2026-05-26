@@ -66,7 +66,7 @@ export async function POST(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: listing } = await (supabase as any)
     .from("listings")
-    .select("address_line1, city, state, price, bedrooms, bathrooms, sqft, listing_details, profile_id, ai_image_generations_used")
+    .select("address_line1, city, state, price, bedrooms, bathrooms, sqft, listing_details, realtor_id, ai_image_generations_used")
     .eq("id", params.id)
     .single() as {
       data: {
@@ -78,13 +78,13 @@ export async function POST(
         bathrooms: number | null;
         sqft: number | null;
         listing_details: Record<string, unknown> | null;
-        profile_id: string;
+        realtor_id: string;
         ai_image_generations_used: number;
       } | null
     };
 
   if (!listing) return NextResponse.json({ error: "Listing not found" }, { status: 404 });
-  if (listing.profile_id !== user.id) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+  if (listing.realtor_id !== user.id) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
   const details = listing.listing_details ?? {};
   const highlights = Array.isArray(details.highlights) ? (details.highlights as string[]).join(", ") : "";
