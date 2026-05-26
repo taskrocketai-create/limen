@@ -22,6 +22,7 @@ export interface CardVariationProps {
   agentPhone?: string;
   agentWebsite?: string;
   logoUrl?: string | null;
+  headshotUrl?: string | null;
   isVertical?: boolean;
 }
 
@@ -41,6 +42,40 @@ function getBrand(brand?: BrandProfile | null) {
     accent: brand?.accent_color ?? "#C8A96E",
     badge: brand?.badge_text ?? "Just Listed",
   };
+}
+
+function AgentStrip({ agentName, agentPhone, agentWebsite, headshotUrl, color, poweredByColor }: {
+  agentName?: string;
+  agentPhone?: string;
+  agentWebsite?: string;
+  headshotUrl?: string | null;
+  color: string;
+  poweredByColor: string;
+}) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+        {headshotUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={headshotUrl}
+            alt="Agent"
+            crossOrigin="anonymous"
+            style={{ width: "22px", height: "22px", borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
+          />
+        )}
+        <div style={{ fontSize: "8px", color, lineHeight: 1.4 }}>
+          {agentName && <div style={{ fontWeight: 500 }}>{agentName}</div>}
+          <div style={{ opacity: 0.75 }}>
+            {agentPhone && <span>{agentPhone}</span>}
+            {agentPhone && agentWebsite && <span style={{ margin: "0 4px" }}>·</span>}
+            {agentWebsite && <span>{agentWebsite.replace(/^https?:\/\//, "")}</span>}
+          </div>
+        </div>
+      </div>
+      <div style={{ fontSize: "6px", color: poweredByColor, letterSpacing: "1px", textTransform: "uppercase" }}>Powered by Limen</div>
+    </div>
+  );
 }
 
 function Logo({ logoUrl, agentName, height, filter }: { logoUrl?: string | null; agentName?: string; height: string; filter?: string }) {
@@ -65,7 +100,7 @@ function Logo({ logoUrl, agentName, height, filter }: { logoUrl?: string | null;
 // STYLE 1 — CINEMATIC
 // Full-bleed dark photo. Large centered serif address. Minimal. Editorial.
 // ===========================================================================
-export function VariationCinematic({ photos, address, caption, price, bedrooms, bathrooms, sqft, brand, agentName, agentPhone, agentWebsite, logoUrl, isVertical }: CardVariationProps) {
+export function VariationCinematic({ photos, address, caption, price, bedrooms, bathrooms, sqft, brand, agentName, agentPhone, agentWebsite, logoUrl, headshotUrl, isVertical }: CardVariationProps) {
   const cover = photos[0];
   const b = getBrand(brand);
   const shortAddress = address.split(",")[0];
@@ -116,13 +151,8 @@ export function VariationCinematic({ photos, address, caption, price, bedrooms, 
       </div>
 
       {/* Bottom */}
-      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "10px 18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ fontSize: "8px", color: "rgba(255,255,255,0.4)", fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.5px" }}>
-          {agentName ?? ""}
-          {agentPhone && <span style={{ marginLeft: "8px" }}>{agentPhone}</span>}
-          {agentWebsite && <span style={{ marginLeft: "8px" }}>{agentWebsite.replace(/^https?:\/\//, "")}</span>}
-        </div>
-        <div style={{ fontSize: "6px", color: "rgba(255,255,255,0.2)", letterSpacing: "1px", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif" }}>Powered by Limen</div>
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "10px 18px" }}>
+        <AgentStrip agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} headshotUrl={headshotUrl} color="rgba(255,255,255,0.5)" poweredByColor="rgba(255,255,255,0.2)" />
       </div>
     </div>
   );
@@ -132,7 +162,7 @@ export function VariationCinematic({ photos, address, caption, price, bedrooms, 
 // STYLE 2 — SPLIT PANEL
 // Photo left 60%, brand color panel right 40%. All info stacked in panel.
 // ===========================================================================
-export function VariationSplit({ photos, address, caption, price, bedrooms, bathrooms, sqft, brand, agentName, agentPhone, agentWebsite, logoUrl, isVertical }: CardVariationProps) {
+export function VariationSplit({ photos, address, caption, price, bedrooms, bathrooms, sqft, brand, agentName, agentPhone, agentWebsite, logoUrl, headshotUrl, isVertical }: CardVariationProps) {
   const cover = photos[0];
   const b = getBrand(brand);
   const shortAddress = address.split(",")[0];
@@ -160,12 +190,7 @@ export function VariationSplit({ photos, address, caption, price, bedrooms, bath
           <div>
             {specs && <div style={{ fontSize: "9px", color: b.accent, letterSpacing: "1px", marginBottom: "8px" }}>{specs}</div>}
             <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <div style={{ fontSize: "8px", color: "rgba(255,255,255,0.5)" }}>
-                {agentName ?? ""}
-                {agentPhone && <span style={{ marginLeft: "8px" }}>{agentPhone}</span>}
-                {agentWebsite && <span style={{ marginLeft: "8px" }}>{agentWebsite.replace(/^https?:\/\//, "")}</span>}
-              </div>
-              <div style={{ fontSize: "6px", color: "rgba(255,255,255,0.2)", letterSpacing: "1px", textTransform: "uppercase" }}>Powered by Limen</div>
+              <AgentStrip agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} headshotUrl={headshotUrl} color="rgba(255,255,255,0.5)" poweredByColor="rgba(255,255,255,0.2)" />
             </div>
           </div>
         </div>
@@ -192,8 +217,7 @@ export function VariationSplit({ photos, address, caption, price, bedrooms, bath
           {caption && <div style={{ fontSize: "8px", color: "rgba(255,255,255,0.45)", fontFamily: "Georgia, serif", fontStyle: "italic", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{caption}</div>}
         </div>
         <div>
-          <div style={{ fontSize: "8px", color: "rgba(255,255,255,0.5)", marginBottom: "3px" }}>{agentName ?? ""}</div>
-          <div style={{ fontSize: "6px", color: "rgba(255,255,255,0.2)", letterSpacing: "1px", textTransform: "uppercase" }}>Powered by Limen</div>
+          <AgentStrip agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} headshotUrl={headshotUrl} color="rgba(255,255,255,0.5)" poweredByColor="rgba(255,255,255,0.2)" />
         </div>
       </div>
     </div>
@@ -204,7 +228,7 @@ export function VariationSplit({ photos, address, caption, price, bedrooms, bath
 // STYLE 3 — BOLD HEADER
 // Giant color band top with huge price type. Photo fills bottom.
 // ===========================================================================
-export function VariationBoldHeader({ photos, address, caption, price, bedrooms, bathrooms, sqft, brand, agentName, agentPhone, agentWebsite, logoUrl, isVertical }: CardVariationProps) {
+export function VariationBoldHeader({ photos, address, caption, price, bedrooms, bathrooms, sqft, brand, agentName, agentPhone, agentWebsite, logoUrl, headshotUrl, isVertical }: CardVariationProps) {
   const cover = photos[0];
   const b = getBrand(brand);
   const shortAddress = address.split(",")[0];
@@ -240,14 +264,7 @@ export function VariationBoldHeader({ photos, address, caption, price, bedrooms,
           {caption && <div style={{ fontSize: isVertical ? "10px" : "8px", color: "rgba(255,255,255,0.6)", fontFamily: "Georgia, serif", fontStyle: "italic", lineHeight: 1.5, marginBottom: "6px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{caption}</div>}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div style={{ fontSize: "9px", color: b.accent, letterSpacing: "1px" }}>{specs}</div>
-            <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-              <span style={{ fontSize: "8px", color: "rgba(255,255,255,0.4)" }}>
-                {agentName ?? ""}
-                {agentPhone && <span style={{ marginLeft: "6px" }}>{agentPhone}</span>}
-                {agentWebsite && <span style={{ marginLeft: "6px" }}>{agentWebsite.replace(/^https?:\/\//, "")}</span>}
-              </span>
-              <span style={{ fontSize: "6px", letterSpacing: "1px", textTransform: "uppercase", color: "rgba(255,255,255,0.2)" }}>Powered by Limen</span>
-            </div>
+            <AgentStrip agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} headshotUrl={headshotUrl} color="rgba(255,255,255,0.5)" poweredByColor="rgba(255,255,255,0.2)" />
           </div>
         </div>
       </div>
@@ -259,7 +276,7 @@ export function VariationBoldHeader({ photos, address, caption, price, bedrooms,
 // STYLE 4 — POSTCARD
 // White border frame around photo. Clean bottom strip. Classic print feel.
 // ===========================================================================
-export function VariationPostcard({ photos, address, caption, price, bedrooms, bathrooms, sqft, brand, agentName, agentPhone, agentWebsite, logoUrl, isVertical }: CardVariationProps) {
+export function VariationPostcard({ photos, address, caption, price, bedrooms, bathrooms, sqft, brand, agentName, agentPhone, agentWebsite, logoUrl, headshotUrl, isVertical }: CardVariationProps) {
   const cover = photos[0];
   const b = getBrand(brand);
   const shortAddress = address.split(",")[0];
@@ -305,14 +322,7 @@ export function VariationPostcard({ photos, address, caption, price, bedrooms, b
         {caption && <div style={{ fontSize: isVertical ? "9px" : "8px", color: "rgba(255,255,255,0.5)", fontFamily: "Georgia, serif", fontStyle: "italic", lineHeight: 1.5, marginTop: "4px", marginBottom: "6px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{caption}</div>}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div style={{ fontSize: isVertical ? "9px" : "8px", color: b.accent, letterSpacing: "1px" }}>{specs}</div>
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <span style={{ fontSize: "8px", color: "rgba(255,255,255,0.4)" }}>
-              {agentName ?? ""}
-              {agentPhone && <span style={{ marginLeft: "6px" }}>{agentPhone}</span>}
-              {agentWebsite && <span style={{ marginLeft: "6px" }}>{agentWebsite.replace(/^https?:\/\//, "")}</span>}
-            </span>
-            <span style={{ fontSize: "6px", letterSpacing: "1px", textTransform: "uppercase", color: "rgba(255,255,255,0.2)" }}>Powered by Limen</span>
-          </div>
+          <AgentStrip agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} headshotUrl={headshotUrl} color="rgba(255,255,255,0.5)" poweredByColor="rgba(255,255,255,0.2)" />
         </div>
       </div>
     </div>
@@ -323,7 +333,7 @@ export function VariationPostcard({ photos, address, caption, price, bedrooms, b
 // STYLE 5 — MAGAZINE
 // Photo top half. Clean white bottom with large serif. Very professional.
 // ===========================================================================
-export function VariationMagazine({ photos, address, caption, price, bedrooms, bathrooms, sqft, brand, agentName, agentPhone, agentWebsite, logoUrl, isVertical }: CardVariationProps) {
+export function VariationMagazine({ photos, address, caption, price, bedrooms, bathrooms, sqft, brand, agentName, agentPhone, agentWebsite, logoUrl, headshotUrl, isVertical }: CardVariationProps) {
   const cover = photos[0];
   const b = getBrand(brand);
   const shortAddress = address.split(",")[0];
@@ -374,14 +384,7 @@ export function VariationMagazine({ photos, address, caption, price, bedrooms, b
               {bathrooms && <div style={{ textAlign: "center" }}><div style={{ fontSize: isVertical ? "14px" : "11px", fontWeight: "600", color: "#1A1814" }}>{bathrooms}</div><div style={{ fontSize: "7px", color: "#6B6456", letterSpacing: "1px", textTransform: "uppercase" }}>Baths</div></div>}
               {sqft && <div style={{ textAlign: "center" }}><div style={{ fontSize: isVertical ? "14px" : "11px", fontWeight: "600", color: "#1A1814" }}>{sqft.toLocaleString()}</div><div style={{ fontSize: "7px", color: "#6B6456", letterSpacing: "1px", textTransform: "uppercase" }}>Sq Ft</div></div>}
             </div>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: "8px", color: "#6B6456" }}>
-                {agentName ?? ""}
-                {agentPhone && <span style={{ marginLeft: "6px" }}>{agentPhone}</span>}
-                {agentWebsite && <span style={{ marginLeft: "6px" }}>{agentWebsite.replace(/^https?:\/\//, "")}</span>}
-              </div>
-              <div style={{ fontSize: "6px", color: "#bbb", letterSpacing: "1px", textTransform: "uppercase" }}>Powered by Limen</div>
-            </div>
+            <AgentStrip agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} headshotUrl={headshotUrl} color="#6B6456" poweredByColor="#bbb" />
           </div>
         </div>
       </div>
