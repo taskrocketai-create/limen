@@ -52,13 +52,15 @@ function AgentStrip({ agentName, agentPhone, agentWebsite, headshotUrl, color, p
   color: string;
   poweredByColor: string;
 }) {
+  // Add cache-busting only if URL doesn't already have a query param
+  const headshotSrc = headshotUrl && !headshotUrl.includes("?") ? `${headshotUrl}?v=${Date.now()}` : headshotUrl;
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
       <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-        {headshotUrl && (
+        {headshotSrc && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={headshotUrl}
+            src={headshotSrc}
             alt="Agent"
             crossOrigin="anonymous"
             style={{ width: "22px", height: "22px", borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
@@ -79,13 +81,11 @@ function AgentStrip({ agentName, agentPhone, agentWebsite, headshotUrl, color, p
 }
 
 function Logo({ logoUrl, agentName, height, filter }: { logoUrl?: string | null; agentName?: string; height: string; filter?: string }) {
-  if (logoUrl) {
+  const src = logoUrl && !logoUrl.includes("?") ? `${logoUrl}?v=${Date.now()}` : logoUrl;
+  if (src) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
-      // eslint-disable-next-line @next/next/no-img-element
-
-      // eslint-disable-next-line @next/next/no-img-element
-      <img src={logoUrl} alt="Logo" crossOrigin="anonymous"
+      <img src={src} alt="Logo" crossOrigin="anonymous"
         style={{ height, maxWidth: "120px", objectFit: "contain", filter: filter ?? "brightness(0) invert(1)" }} />
     );
   }
