@@ -75,15 +75,19 @@ export async function POST(
 
   // Fetch latest ai_output separately to avoid join issues
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: latestOutput } = await (supabase as any)
-  .from("ai_outputs")
-  .select("listing_description")
-  .eq("listing_id", params.id)
-  .order("version", { ascending: false })
-  .limit(1)
-  .maybeSingle() as {
-    data: { listing_description: string | null } | null
-  };
+  let latestOutput: { listing_description: string | null } | null = null;
+try {
+  const { data } = await (supabase as any)
+    .from("ai_outputs")
+    .select("listing_description")
+    .eq("listing_id", params.id)
+    .order("version", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  latestOutput = data;
+} catch {
+  // ai_outputs fetch failed — continue without existing description
+}
 
   const brand = profile?.brand_profile ?? {};
   const details = listing.listing_details ?? {};
