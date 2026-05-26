@@ -91,6 +91,7 @@ interface ListingOutputClientProps {
   } | null;
   agent_name?: string;
   agent_phone?: string;
+  agent_website?: string;
   logo_url?: string | null;
   headshot_url?: string | null;
 }
@@ -132,7 +133,7 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
     intake_token, intake_sent_at, intake_completed_at,
     listing_details, photos, ai_outputs,
     listing_locked, packages_used: initialPackagesUsed,
-    brand, agent_name, agent_phone, logo_url, headshot_url,
+    brand, agent_name, agent_phone, agent_website, logo_url, headshot_url,
   } = props;
 
   const [, startTransition] = useTransition();
@@ -534,6 +535,7 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
                   brand={brand}
                   agentName={agent_name}
                   agentPhone={agent_phone}
+                  agentWebsite={agent_website}
                   logoUrl={logo_url}
                   headshotUrl={headshot_url}
                 />
