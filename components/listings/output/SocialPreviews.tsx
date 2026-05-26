@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 
-import { CardVariation, VARIATION_LABELS, type VariationType, type CardVariationProps } from "@/components/listings/output/CardVariations";
+import { CardVariation, type VariationType, type CardVariationProps } from "@/components/listings/output/CardVariations";
 
 export interface BrandProfile {
   brand_name?: string;
@@ -43,7 +43,6 @@ interface MarketingCardProps {
   logoUrl?: string | null;
   headshotUrl?: string | null;
   aiImageUrl?: string | null;
-  currentVariation?: VariationType;
   platform: "facebook" | "instagram" | "tiktok" | "twitter" | "linkedin" | "nextdoor";
 }
 
@@ -113,18 +112,13 @@ function DownloadButton({ cardRef, filename }: { cardRef: React.RefObject<HTMLDi
 
 // ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
-// Single platform preview wrapper with variation selector
+// ---------------------------------------------------------------------------
+// Single platform preview wrapper — no overlay tabs, AI image when available
 // ---------------------------------------------------------------------------
 function PlatformPreview(props: MarketingCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const [variation, setVariation] = useState<VariationType>(props.currentVariation ?? "cinematic");
   const config = PLATFORM_CONFIG[props.platform];
-
-  // Sync when parent changes variation via Regenerate overlay
-  if (props.currentVariation && props.currentVariation !== variation) {
-    setVariation(props.currentVariation);
-  }
-  const filename = `${props.platform}-${variation}.png`;
+  const filename = `${props.platform}-listing.png`;
   const isVertical = props.platform === "tiktok";
 
   const variationProps: CardVariationProps = {
@@ -146,7 +140,11 @@ function PlatformPreview(props: MarketingCardProps) {
     isVertical,
   };
 
-  const variations = Object.entries(VARIATION_LABELS) as [VariationType, string][];
+  // Pick best style based on brand card_style
+  const cardStyle = (props.brand?.card_style ?? "cinematic") as VariationType;
+  const variation: VariationType = ["cinematic","split","bold_header","postcard","magazine"].includes(cardStyle)
+    ? cardStyle as VariationType
+    : "cinematic";
 
   return (
     <div className="space-y-3">
@@ -161,22 +159,9 @@ function PlatformPreview(props: MarketingCardProps) {
         </div>
       </div>
 
-      {/* Style selector */}
-      <div className="flex flex-wrap gap-2">
-        {variations.map(([id, label]) => (
-          <button
-            key={id}
-            onClick={() => setVariation(id)}
-            className={`px-3 py-1.5 font-sans text-xs rounded-md transition-colors ${
-              variation === id
-                ? "bg-ink text-gilt"
-                : "border border-stone/20 text-stone hover:border-gilt hover:text-gilt"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      {props.aiImageUrl && (
+        <p className="font-sans text-xs text-green-600">✓ AI-generated image applied</p>
+      )}
 
       {/* Card */}
       <div
