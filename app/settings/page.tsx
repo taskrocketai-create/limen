@@ -20,6 +20,8 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
+  const [resettingBrand, setResettingBrand] = useState(false);
+  const [brandResetDone, setBrandResetDone] = useState(false);
 
   const loadProfile = useCallback(async (id: string) => {
     const { data } = await supabase.from('profiles').select('*').eq('id', id).maybeSingle();
@@ -54,6 +56,18 @@ export default function SettingsPage() {
     const { url } = await res.json();
     if (url) window.location.href = url;
     setPortalLoading(false);
+  };
+
+  const handleResetBrand = async () => {
+    if (!confirm("This will clear your brand profile, logo, and headshot. Your listings are not affected. Continue?")) return;
+    setResettingBrand(true);
+    await fetch('/api/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ brand_profile: null, logo_url: null, headshot_url: null, onboarding_completed: false }),
+    });
+    setResettingBrand(false);
+    setBrandResetDone(true);
   };
 
   const handleSignOut = async () => {
@@ -141,6 +155,45 @@ export default function SettingsPage() {
           >
             {portalLoading ? 'Loading…' : 'Manage Billing'}
           </button>
+        </section>
+
+        {/* Brand */}
+        <section className="bg-white border border-[#E8E4DC] p-8 space-y-4">
+          <div>
+            <h2 className="font-serif text-xl text-[#1A1814] mb-1">Brand</h2>
+            <p className="text-[#6B6456] text-sm">Manage your marketing brand profile — the colors, style, logo, and headshot that appear on every listing card and social post.</p>
+          </div>
+
+          <div className="space-y-4 bg-[#F7F5F1] border border-[#E8E4DC] p-5">
+            <div className="space-y-1">
+              <p className="font-sans text-xs font-semibold text-[#1A1814] uppercase tracking-widest">When should I update my brand?</p>
+              <p className="font-sans text-sm text-[#6B6456]">Use <strong className="text-[#1A1814]">Update brand setup</strong> to refine your answers, swap your logo, or update your headshot. Your existing brand profile is used as a starting point — great for small adjustments or when you want to be more specific about your style.</p>
+            </div>
+            <div className="w-full h-px bg-[#E8E4DC]" />
+            <div className="space-y-1">
+              <p className="font-sans text-xs font-semibold text-[#1A1814] uppercase tracking-widest">When should I reset?</p>
+              <p className="font-sans text-sm text-[#6B6456]">Use <strong className="text-[#1A1814]">Reset brand</strong> when you move to a new agency, rebrand completely, or want a clean slate. This clears everything — brand profile, logo, headshot — and walks you through the full setup from scratch. Your listings are never affected.</p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <a
+              href="/onboarding"
+              className="inline-block bg-[#1A1814] text-[#F7F5F1] px-6 py-3 font-sans text-xs tracking-widest uppercase hover:bg-[#C8A96E] hover:text-[#1A1814] transition-colors text-center"
+            >
+              Update brand setup
+            </a>
+            <button
+              onClick={handleResetBrand}
+              disabled={resettingBrand}
+              className="text-red-600 border border-red-200 px-6 py-3 text-xs tracking-widest uppercase hover:bg-red-50 transition-colors disabled:opacity-50"
+            >
+              {resettingBrand ? "Resetting…" : "Reset brand & start over"}
+            </button>
+          </div>
+          {brandResetDone && (
+            <p className="font-sans text-xs text-green-600">✓ Brand reset. Go to brand setup to build your new profile.</p>
+          )}
         </section>
 
         {/* Sign out */}
