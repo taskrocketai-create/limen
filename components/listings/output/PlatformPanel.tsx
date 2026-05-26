@@ -185,15 +185,24 @@ function PhotoStrip({ photos, max = 5, label }: { photos: Photo[]; max?: number;
   );
 }
 
-export default function PlatformPanel({ social_captions, platform_content, photos, address, listingId, isLocked, isPublishPlan, price, bedrooms, bathrooms, sqft, brand, agentName, agentPhone, agentWebsite, logoUrl }: PlatformPanelProps) {
+export default function PlatformPanel({ social_captions, platform_content, photos, address, listingId, isLocked, isPublishPlan, price, bedrooms, bathrooms, sqft, brand, agentName, agentPhone, agentWebsite, logoUrl, headshotUrl }: PlatformPanelProps) {
   const [active, setActive] = useState<PlatformId | null>(null);
   const [captions, setCaptions] = useState<Partial<Record<string, string>>>({});
+  const [photoIndexes, setPhotoIndexes] = useState<Partial<Record<string, number>>>({});
   const [regenerating, setRegenerating] = useState<string | null>(null);
+  const [regeneratingPhoto, setRegeneratingPhoto] = useState<string | null>(null);
   const [postedPlatforms, setPostedPlatforms] = useState<Set<string>>(new Set());
   const [modal, setModal] = useState<{ platform: "facebook" | "instagram"; caption: string; variation: VariationType } | null>(null);
 
   const getCaption = (platform: string): string => {
     return captions[platform] ?? (social_captions as Record<string, string>)?.[platform] ?? "";
+  };
+
+  const getPhotos = (platform: string): Photo[] => {
+    const idx = photoIndexes[platform] ?? 0;
+    if (idx === 0) return photos;
+    // Rotate photos so the selected index is first
+    return [...photos.slice(idx), ...photos.slice(0, idx)];
   };
 
   const handleRegenerate = async (platform: string) => {
@@ -212,18 +221,33 @@ export default function PlatformPanel({ social_captions, platform_content, photo
     }
   };
 
-  const RegenerateButton = ({ platform }: { platform: string }) => (
-    <button
-      onClick={() => handleRegenerate(platform)}
-      disabled={regenerating === platform}
-      className="flex items-center gap-1.5 px-3 py-1.5 border border-stone/20 rounded font-sans text-xs text-stone hover:border-gilt hover:text-gilt transition-colors disabled:opacity-50"
-    >
-      {regenerating === platform ? (
-        <><span className="animate-spin">↺</span> Regenerating…</>
-      ) : (
-        <>↺ Regenerate caption</>
+  const handleRegeneratePhoto = (platform: string) => {
+    setRegeneratingPhoto(platform);
+    const current = photoIndexes[platform] ?? 0;
+    const next = (current + 1) % Math.max(photos.length, 1);
+    setPhotoIndexes(prev => ({ ...prev, [platform]: next }));
+    setTimeout(() => setRegeneratingPhoto(null), 300);
+  };
+
+  const RegenButtons = ({ platform }: { platform: string }) => (
+    <div className="flex gap-2 flex-wrap">
+      <button
+        onClick={() => handleRegenerate(platform)}
+        disabled={regenerating === platform}
+        className="flex items-center gap-1.5 px-3 py-1.5 border border-stone/20 rounded font-sans text-xs text-stone hover:border-gilt hover:text-gilt transition-colors disabled:opacity-50"
+      >
+        {regenerating === platform ? <><span className="animate-spin inline-block">↺</span> Regenerating…</> : <>↺ Regenerate caption</>}
+      </button>
+      {photos.length > 1 && (
+        <button
+          onClick={() => handleRegeneratePhoto(platform)}
+          disabled={regeneratingPhoto === platform}
+          className="flex items-center gap-1.5 px-3 py-1.5 border border-stone/20 rounded font-sans text-xs text-stone hover:border-gilt hover:text-gilt transition-colors disabled:opacity-50"
+        >
+          {regeneratingPhoto === platform ? <><span className="animate-spin inline-block">↺</span> Switching…</> : <>🖼 Regenerate image</>}
+        </button>
       )}
-    </button>
+    </div>
   );
 
   const hasContent = (id: PlatformId) => {
@@ -329,7 +353,7 @@ export default function PlatformPanel({ social_captions, platform_content, photo
             <div className="space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <p className="font-sans text-xs text-stone">Review your card and caption before posting.</p>
-                <RegenerateButton platform="facebook" />
+                <RegenButtons platform="facebook" />
               </div>
               {isLocked && (
                 isPublishPlan ? (
@@ -350,7 +374,7 @@ export default function PlatformPanel({ social_captions, platform_content, photo
                   </div>
                 )
               )}
-              <FacebookPreview caption={getCaption("facebook")} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} />
+              <FacebookPreview caption={getCaption("facebook")} photos={getPhotos(active ?? "")} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} headshotUrl={headshotUrl} />
             </div>
           )}
 
@@ -359,7 +383,7 @@ export default function PlatformPanel({ social_captions, platform_content, photo
             <div className="space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <p className="font-sans text-xs text-stone">Review your card and caption before posting.</p>
-                <RegenerateButton platform="instagram" />
+                <RegenButtons platform="instagram" />
               </div>
               {isLocked && (
                 isPublishPlan ? (
@@ -380,7 +404,7 @@ export default function PlatformPanel({ social_captions, platform_content, photo
                   </div>
                 )
               )}
-              <InstagramPreview caption={getCaption("instagram")} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} />
+              <InstagramPreview caption={getCaption("instagram")} photos={getPhotos(active ?? "")} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} headshotUrl={headshotUrl} />
             </div>
           )}
 
@@ -389,9 +413,9 @@ export default function PlatformPanel({ social_captions, platform_content, photo
             <div className="space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <p className="font-sans text-xs text-stone">Walking-tour script. Download the card as your TikTok cover image.</p>
-                <RegenerateButton platform="tiktok" />
+                <RegenButtons platform="tiktok" />
               </div>
-              <TikTokPreview caption={getCaption("tiktok")} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} />
+              <TikTokPreview caption={getCaption("tiktok")} photos={getPhotos(active ?? "")} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} headshotUrl={headshotUrl} />
             </div>
           )}
 
@@ -400,9 +424,9 @@ export default function PlatformPanel({ social_captions, platform_content, photo
             <div className="space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <p className="font-sans text-xs text-stone">Professional reach — ideal for move-up buyers and investors.</p>
-                <RegenerateButton platform="linkedin" />
+                <RegenButtons platform="linkedin" />
               </div>
-              <LinkedInPreview caption={getCaption("linkedin")} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} />
+              <LinkedInPreview caption={getCaption("linkedin")} photos={getPhotos(active ?? "")} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} headshotUrl={headshotUrl} />
             </div>
           )}
 
@@ -411,9 +435,9 @@ export default function PlatformPanel({ social_captions, platform_content, photo
             <div className="space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <p className="font-sans text-xs text-stone">Post in the For Sale section of your neighborhood feed.</p>
-                <RegenerateButton platform="nextdoor" />
+                <RegenButtons platform="nextdoor" />
               </div>
-              <NextdoorPreview caption={getCaption("nextdoor")} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} />
+              <NextdoorPreview caption={getCaption("nextdoor")} photos={getPhotos(active ?? "")} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} headshotUrl={headshotUrl} />
             </div>
           )}
 
@@ -433,9 +457,9 @@ export default function PlatformPanel({ social_captions, platform_content, photo
             <div className="space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <p className="font-sans text-xs text-stone">Download the card or copy the text. Attach your cover photo.</p>
-                <RegenerateButton platform="twitter" />
+                <RegenButtons platform="twitter" />
               </div>
-              <TwitterPreview caption={getCaption("twitter")} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} />
+              <TwitterPreview caption={getCaption("twitter")} photos={getPhotos(active ?? "")} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} headshotUrl={headshotUrl} />
             </div>
           )}
         </div>
