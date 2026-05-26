@@ -112,6 +112,7 @@ function PlatformPreview(props: MarketingCardProps) {
   const variationProps: CardVariationProps = {
     photos: props.photos,
     address: props.address,
+    caption: props.caption,
     price: props.price,
     bedrooms: props.bedrooms,
     bathrooms: props.bathrooms,
@@ -163,8 +164,9 @@ function PlatformPreview(props: MarketingCardProps) {
         <CardVariation variation={variation} {...variationProps} />
       </div>
 
-      {/* Caption */}
+      {/* Caption for copying */}
       <div className="bg-parchment rounded-md p-3 max-w-sm mx-auto">
+        <p className="font-sans text-xs text-stone/50 mb-1 uppercase tracking-wider">Caption to paste</p>
         <p className="font-sans text-xs text-stone leading-relaxed line-clamp-4">{props.caption}</p>
       </div>
     </div>
