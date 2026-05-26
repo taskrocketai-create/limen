@@ -44,17 +44,6 @@ interface MarketingCardProps {
   platform: "facebook" | "instagram" | "tiktok" | "twitter" | "linkedin" | "nextdoor";
 }
 
-function getBrandTheme(brand?: BrandProfile | null) {
-  return {
-    primary: brand?.primary_color ?? "#1A1814",
-    secondary: brand?.secondary_color ?? "#C8A96E",
-    background: brand?.background_color ?? "#1A1814",
-    text: brand?.text_color ?? "#F7F5F1",
-    accent: brand?.accent_color ?? "#C8A96E",
-    badge: brand?.badge_text ?? "Just Listed",
-    cardStyle: brand?.card_style ?? "bold_split",
-  };
-}
 
 // Platform dimensions (aspect ratios for display)
 const PLATFORM_CONFIG = {
