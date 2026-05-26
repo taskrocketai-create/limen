@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import Anthropic from "@anthropic-ai/sdk";
 
-export const maxDuration = 60; // Vercel Pro: 60s, Hobby: 10s
+export const maxDuration = 60;
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -25,14 +25,13 @@ export async function POST(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: profile } = await (supabase as any)
     .from("profiles")
-    .select("brand_profile, ai_image_generations_used, ai_image_generations_reset_at, stripe_subscription_status")
+    .select("brand_profile, ai_image_generations_used, ai_image_generations_reset_at")
     .eq("id", user.id)
     .single() as {
       data: {
         brand_profile: Record<string, string> | null;
         ai_image_generations_used: number;
         ai_image_generations_reset_at: string | null;
-        stripe_subscription_status: string | null;
       } | null
     };
 
@@ -41,13 +40,12 @@ export async function POST(
   const resetAt = profile?.ai_image_generations_reset_at ? new Date(profile.ai_image_generations_reset_at) : null;
   const needsReset = !resetAt || now.getMonth() !== resetAt.getMonth() || now.getFullYear() !== resetAt.getFullYear();
   const generationsUsed = needsReset ? 0 : (profile?.ai_image_generations_used ?? 0);
-  const limit = PLAN_LIMITS.solo; // TODO: expand per plan
-  
+  const limit = PLAN_LIMITS.solo;
+
   if (generationsUsed >= limit) {
     return NextResponse.json({
-      error: `You've used all ${limit} regenerations this month. Upgrade to Publish for 25/month or Pro for unlimited.`,
-      used: generationsUsed,
-      limit,
+      error: `You've used all ${limit} AI image regenerations this month. Upgrade to Publish for 25/month or Pro for unlimited.`,
+      used: generationsUsed, limit,
     }, { status: 429 });
   }
 
@@ -75,59 +73,44 @@ export async function POST(
   const highlights = Array.isArray(details.highlights) ? (details.highlights as string[]).join(", ") : "";
   const neighborhood = typeof details.neighborhood === "string" ? details.neighborhood : "";
   const recentUpdates = typeof details.recent_updates === "string" ? details.recent_updates : "";
-  const address = `${listing.address_line1}, ${listing.city}, ${listing.state} ${listing.zip}`;
   const latestOutput = listing.ai_outputs?.[listing.ai_outputs.length - 1];
   const existingDescription = latestOutput?.description ?? "";
+  const address = `${listing.address_line1}, ${listing.city}, ${listing.state} ${listing.zip}`;
 
-  // Platform-specific caption style
   const platformStyles: Record<string, string> = {
-    facebook: "conversational, 150-200 words, no hashtags, warm and community-focused",
+    facebook: "conversational, 150-200 words, no hashtags, warm and engaging",
     instagram: "punchy opener, 3-5 lines, then 5-8 relevant hashtags",
-    tiktok: "hook + 3 talking points, 60-second walkthrough script",
-    twitter: "max 240 characters, punchy and direct",
+    tiktok: "hook + 3 talking points for a 60-second walkthrough",
+    twitter: "max 240 characters, direct and compelling",
     linkedin: "professional, market-aware, 100-150 words",
     nextdoor: "neighbor-to-neighbor tone, hyperlocal, 100-150 words",
   };
 
-  const captionStyle = platformStyles[platform] ?? platformStyles.facebook;
+  const brandBrief = brand ? `Agent brand: ${brand.tone ?? "professional"} tone, ${brand.design_notes ?? ""}` : "";
 
-  // Build brand creative brief from questionnaire answers
-  const brandBrief = brand ? `
-Agent brand profile:
-- Market focus: ${brand.tone ?? "professional"}
-- Style: ${brand.card_style ?? "clean"}
-- Badge: ${brand.badge_text ?? "Just Listed"}
-- Design notes: ${brand.design_notes ?? "Professional real estate marketing"}
-- Tagline style: ${brand.tagline_style ?? "Clear and compelling"}
-` : "";
-
-  // Generate image prompt + caption together
+  // Generate image prompt + caption together via Claude
   const combinedRes = await anthropic.messages.create({
     model: "claude-sonnet-4-20250514",
     max_tokens: 800,
-    system: `You are a senior creative director at a top real estate marketing agency. 
-You generate compelling image prompts and platform captions that feel premium, not generic.
-Always respond with valid JSON only.`,
+    system: "You are a senior real estate marketing creative director. Respond with valid JSON only.",
     messages: [{
       role: "user",
       content: `Create a marketing package for this listing:
 
 Property: ${address}
 Price: ${listing.price ? `$${listing.price.toLocaleString()}` : "Call for price"}
-Beds/Baths/Sqft: ${listing.bedrooms ?? "?"}bd / ${listing.bathrooms ?? "?"}ba / ${listing.sqft?.toLocaleString() ?? "?"}sf
+${listing.bedrooms}bd / ${listing.bathrooms}ba / ${listing.sqft?.toLocaleString()}sf
 Highlights: ${highlights}
 Recent updates: ${recentUpdates}
 Neighborhood: ${neighborhood}
-${existingDescription ? `Property description: ${existingDescription.slice(0, 400)}` : ""}
+${existingDescription ? `Description: ${existingDescription.slice(0, 300)}` : ""}
 ${brandBrief}
+Platform: ${platform} — style: ${platformStyles[platform] ?? platformStyles.facebook}
 
-Platform: ${platform}
-Caption style: ${captionStyle}
-
-Return JSON with exactly these two fields:
+Return JSON:
 {
-  "imagePrompt": "A detailed Flux image generation prompt (150-200 words) for a stunning real estate marketing hero image of this specific property. Reference the actual property details, location feel, and highlights. Specify lighting, mood, and angle. End with: professional real estate photography, 8K resolution, wide angle lens, magazine quality",
-  "caption": "The ${platform} caption following the style guidelines above"
+  "imagePrompt": "Detailed Flux image generation prompt 150-200 words for a stunning real estate marketing image of this specific property. Reference actual property details, Wilson NC location feel, highlights. Specify golden hour or twilight lighting. End with: professional real estate photography, 8K resolution, wide angle lens, magazine quality",
+  "caption": "The ${platform} caption"
 }`
     }],
   });
@@ -144,7 +127,7 @@ Return JSON with exactly these two fields:
     return NextResponse.json({ error: "Failed to generate content. Please try again." }, { status: 500 });
   }
 
-  // Generate image via Replicate Flux
+  // Generate image via Replicate Flux — poll for result
   let imageUrl: string | null = null;
   if (process.env.REPLICATE_API_TOKEN && imagePrompt) {
     try {
@@ -169,9 +152,8 @@ Return JSON with exactly these two fields:
       const prediction = await startRes.json();
 
       if (prediction.id) {
-        // Poll for completion (max 50 seconds)
-        let attempts = 0;
-        while (attempts < 25) {
+        // Poll for up to 50 seconds
+        for (let i = 0; i < 25; i++) {
           await new Promise(r => setTimeout(r, 2000));
           const pollRes = await fetch(`https://api.replicate.com/v1/predictions/${prediction.id}`, {
             headers: { "Authorization": `Bearer ${process.env.REPLICATE_API_TOKEN}` },
@@ -179,22 +161,16 @@ Return JSON with exactly these two fields:
           const pollData = await pollRes.json();
 
           if (pollData.status === "succeeded") {
-            if (Array.isArray(pollData.output) && pollData.output[0]) {
-              imageUrl = pollData.output[0];
-            } else if (typeof pollData.output === "string") {
-              imageUrl = pollData.output;
-            }
+            imageUrl = Array.isArray(pollData.output) ? pollData.output[0] : pollData.output;
             break;
           } else if (pollData.status === "failed" || pollData.status === "canceled") {
-            console.error("Replicate failed:", pollData.error);
+            console.error("Replicate prediction failed:", pollData.error);
             break;
           }
-          attempts++;
         }
       }
     } catch (err) {
       console.error("Replicate error:", err);
-      // Continue without image
     }
   }
 
@@ -213,9 +189,8 @@ Return JSON with exactly these two fields:
   return NextResponse.json({
     imageUrl,
     caption,
-    imagePrompt,
     used: newUsed,
     limit,
-    remaining: limit === Infinity ? "unlimited" : limit - newUsed,
+    remaining: limit - newUsed,
   });
 }
