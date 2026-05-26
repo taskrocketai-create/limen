@@ -280,18 +280,11 @@ export default function PlatformPanel({ social_captions, platform_content, photo
           {regenerating === platform ? <><span className="animate-spin inline-block">↺</span> Regenerating…</> : <>↺ Regenerate caption</>}
         </button>
         <button
-          onClick={() => handleRegenerateOverlay(platform)}
-          disabled={regeneratingOverlay === platform}
-          className="flex items-center gap-1.5 px-3 py-1.5 border border-stone/20 rounded font-sans text-xs text-stone hover:border-gilt hover:text-gilt transition-colors disabled:opacity-50"
-        >
-          {regeneratingOverlay === platform ? <><span className="animate-spin inline-block">↺</span> Switching…</> : <>✨ Next design</>}
-        </button>
-        <button
           onClick={handleGenerateAiImage}
           disabled={generatingAiImage}
           className="flex items-center gap-1.5 px-3 py-1.5 bg-ink text-gilt border border-ink rounded font-sans text-xs hover:bg-gilt hover:text-ink transition-colors disabled:opacity-50"
         >
-          {generatingAiImage ? <><span className="animate-spin inline-block">✦</span> Generating…</> : <>✦ AI image</>}
+          {generatingAiImage ? <><span className="animate-spin inline-block">✦</span> Generating AI image…</> : <>✦ Generate AI image</>}
         </button>
       </div>
       {regenError && <p className="font-sans text-xs text-red-500">{regenError}</p>}
@@ -303,7 +296,7 @@ export default function PlatformPanel({ social_captions, platform_content, photo
       )}
       {aiImageUrl && (
         <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded font-sans text-xs text-green-700">
-          ✓ AI image generated — showing on card below
+          ✓ AI image applied to card
         </div>
       )}
     </div>
