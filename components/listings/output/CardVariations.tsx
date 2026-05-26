@@ -117,7 +117,11 @@ export function VariationCinematic({ photos, address, caption, price, bedrooms, 
 
       {/* Bottom */}
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "10px 18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ fontSize: "8px", color: "rgba(255,255,255,0.4)", fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.5px" }}>{agentName ?? ""}</div>
+        <div style={{ fontSize: "8px", color: "rgba(255,255,255,0.4)", fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.5px" }}>
+          {agentName ?? ""}
+          {agentPhone && <span style={{ marginLeft: "8px" }}>{agentPhone}</span>}
+          {agentWebsite && <span style={{ marginLeft: "8px" }}>{agentWebsite.replace(/^https?:\/\//, "")}</span>}
+        </div>
         <div style={{ fontSize: "6px", color: "rgba(255,255,255,0.2)", letterSpacing: "1px", textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif" }}>Powered by Limen</div>
       </div>
     </div>
