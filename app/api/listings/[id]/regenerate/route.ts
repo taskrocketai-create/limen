@@ -134,3 +134,4 @@ Return JSON:
 
   return NextResponse.json({ imageUrl, caption });
 }
+ 
