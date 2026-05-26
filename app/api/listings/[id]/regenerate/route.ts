@@ -22,7 +22,7 @@ export async function POST(
     .from("listings")
     .select("address_line1, city, state, zip, price, bedrooms, bathrooms, sqft, listing_details, realtor_id")
     .eq("id", params.id)
-    .single();
+    .maybeSingle();
 
   if (!listing) return NextResponse.json({ error: "Listing not found" }, { status: 404 });
 
