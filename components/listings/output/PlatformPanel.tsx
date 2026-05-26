@@ -10,6 +10,8 @@ import {
   NextdoorPreview,
   type BrandProfile,
 } from "@/components/listings/output/SocialPreviews";
+import PostApprovalModal from "@/components/listings/output/PostApprovalModal";
+import { type VariationType } from "@/components/listings/output/CardVariations";
 
 interface MlsContent {
   description: string;
@@ -60,6 +62,9 @@ interface PlatformPanelProps {
   platform_content: PlatformContent | null;
   photos: Photo[];
   address: string;
+  listingId?: string;
+  isLocked?: boolean;
+  isPublishPlan?: boolean;
   price?: number | null;
   bedrooms?: number | null;
   bathrooms?: number | null;
@@ -180,8 +185,46 @@ function PhotoStrip({ photos, max = 5, label }: { photos: Photo[]; max?: number;
   );
 }
 
-export default function PlatformPanel({ social_captions, platform_content, photos, address, price, bedrooms, bathrooms, sqft, brand, agentName, agentPhone, agentWebsite, logoUrl }: PlatformPanelProps) {
+export default function PlatformPanel({ social_captions, platform_content, photos, address, listingId, isLocked, isPublishPlan, price, bedrooms, bathrooms, sqft, brand, agentName, agentPhone, agentWebsite, logoUrl }: PlatformPanelProps) {
   const [active, setActive] = useState<PlatformId | null>(null);
+  const [captions, setCaptions] = useState<Partial<Record<string, string>>>({});
+  const [regenerating, setRegenerating] = useState<string | null>(null);
+  const [postedPlatforms, setPostedPlatforms] = useState<Set<string>>(new Set());
+  const [modal, setModal] = useState<{ platform: "facebook" | "instagram"; caption: string; variation: VariationType } | null>(null);
+
+  const getCaption = (platform: string): string => {
+    return captions[platform] ?? (social_captions as Record<string, string>)?.[platform] ?? "";
+  };
+
+  const handleRegenerate = async (platform: string) => {
+    if (!listingId) return;
+    setRegenerating(platform);
+    try {
+      const res = await fetch(`/api/listings/${listingId}/regenerate-caption`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ platform }),
+      });
+      const data = await res.json();
+      if (data.caption) setCaptions(prev => ({ ...prev, [platform]: data.caption }));
+    } finally {
+      setRegenerating(null);
+    }
+  };
+
+  const RegenerateButton = ({ platform }: { platform: string }) => (
+    <button
+      onClick={() => handleRegenerate(platform)}
+      disabled={regenerating === platform}
+      className="flex items-center gap-1.5 px-3 py-1.5 border border-stone/20 rounded font-sans text-xs text-stone hover:border-gilt hover:text-gilt transition-colors disabled:opacity-50"
+    >
+      {regenerating === platform ? (
+        <><span className="animate-spin">↺</span> Regenerating…</>
+      ) : (
+        <>↺ Regenerate caption</>
+      )}
+    </button>
+  );
 
   const hasContent = (id: PlatformId) => {
     if (id === "mls") return !!platform_content?.mls;
@@ -283,51 +326,94 @@ export default function PlatformPanel({ social_captions, platform_content, photo
 
           {/* Facebook */}
           {active === "facebook" && social_captions?.facebook && (
-            <div className="space-y-5">
-              <p className="font-sans text-xs text-stone bg-blue-50 border border-blue-200 rounded-md px-3 py-2">
-                Screenshot or download the preview below, then post directly to Facebook with your photos attached.
-              </p>
-              <FacebookPreview caption={social_captions.facebook} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} />
+            <div className="space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <p className="font-sans text-xs text-stone">Review your card and caption before posting.</p>
+                <RegenerateButton platform="facebook" />
+              </div>
+              {isLocked && (
+                isPublishPlan ? (
+                  postedPlatforms.has("facebook") ? (
+                    <div className="flex items-center gap-2 px-4 py-2.5 bg-green-50 border border-green-200 rounded-lg text-green-700 font-sans text-xs font-medium">✓ Posted to Facebook</div>
+                  ) : (
+                    <button onClick={() => setModal({ platform: "facebook", caption: getCaption("facebook"), variation: "cinematic" })} className="flex items-center gap-2 px-5 py-2.5 bg-[#1877F2] text-white font-sans text-sm font-medium rounded-lg hover:bg-[#166FE5] transition-colors">
+                      📘 Review & Post to Facebook
+                    </button>
+                  )
+                ) : (
+                  <div className="bg-gilt/10 border border-gilt/30 rounded-lg p-4 flex items-center justify-between gap-4">
+                    <div>
+                      <p className="font-sans text-sm font-medium text-ink">Post directly to Facebook & Instagram</p>
+                      <p className="font-sans text-xs text-stone mt-0.5">Upgrade to Limen Publish ($79/mo) to post listings directly.</p>
+                    </div>
+                    <a href="/subscribe" className="flex-shrink-0 bg-gilt text-ink px-4 py-2 font-sans text-xs tracking-widest uppercase hover:bg-ink hover:text-gilt transition-colors">Upgrade →</a>
+                  </div>
+                )
+              )}
+              <FacebookPreview caption={getCaption("facebook")} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} />
             </div>
           )}
 
           {/* Instagram */}
           {active === "instagram" && social_captions?.instagram && (
-            <div className="space-y-5">
-              <p className="font-sans text-xs text-stone bg-pink-50 border border-pink-200 rounded-md px-3 py-2">
-                Download the preview card below or copy the caption. Post to Instagram with your best photo as the cover.
-              </p>
-              <InstagramPreview caption={social_captions.instagram} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} />
+            <div className="space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <p className="font-sans text-xs text-stone">Review your card and caption before posting.</p>
+                <RegenerateButton platform="instagram" />
+              </div>
+              {isLocked && (
+                isPublishPlan ? (
+                  postedPlatforms.has("instagram") ? (
+                    <div className="flex items-center gap-2 px-4 py-2.5 bg-green-50 border border-green-200 rounded-lg text-green-700 font-sans text-xs font-medium">✓ Posted to Instagram</div>
+                  ) : (
+                    <button onClick={() => setModal({ platform: "instagram", caption: getCaption("instagram"), variation: "cinematic" })} className="flex items-center gap-2 px-5 py-2.5 text-white font-sans text-sm font-medium rounded-lg hover:opacity-90 transition-all" style={{ background: "linear-gradient(135deg, #833AB4, #FD1D1D, #F77737)" }}>
+                      📷 Review & Post to Instagram
+                    </button>
+                  )
+                ) : (
+                  <div className="bg-gilt/10 border border-gilt/30 rounded-lg p-4 flex items-center justify-between gap-4">
+                    <div>
+                      <p className="font-sans text-sm font-medium text-ink">Post directly to Facebook & Instagram</p>
+                      <p className="font-sans text-xs text-stone mt-0.5">Upgrade to Limen Publish ($79/mo) to post listings directly.</p>
+                    </div>
+                    <a href="/subscribe" className="flex-shrink-0 bg-gilt text-ink px-4 py-2 font-sans text-xs tracking-widest uppercase hover:bg-ink hover:text-gilt transition-colors">Upgrade →</a>
+                  </div>
+                )
+              )}
+              <InstagramPreview caption={getCaption("instagram")} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} />
             </div>
           )}
 
           {/* TikTok */}
           {active === "tiktok" && social_captions?.tiktok && (
-            <div className="space-y-5">
-              <p className="font-sans text-xs text-stone bg-stone/5 border border-stone/20 rounded-md px-3 py-2">
-                Use this script for a walking-tour video. Download the thumbnail card to use as your TikTok cover image.
-              </p>
-              <TikTokPreview caption={social_captions.tiktok} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} />
+            <div className="space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <p className="font-sans text-xs text-stone">Walking-tour script. Download the card as your TikTok cover image.</p>
+                <RegenerateButton platform="tiktok" />
+              </div>
+              <TikTokPreview caption={getCaption("tiktok")} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} />
             </div>
           )}
 
           {/* LinkedIn */}
           {active === "linkedin" && social_captions?.linkedin && (
-            <div className="space-y-5">
-              <p className="font-sans text-xs text-stone bg-blue-50 border border-blue-200 rounded-md px-3 py-2">
-                Download the preview or copy the text. Post to LinkedIn for professional network reach.
-              </p>
-              <LinkedInPreview caption={social_captions.linkedin} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} />
+            <div className="space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <p className="font-sans text-xs text-stone">Professional reach — ideal for move-up buyers and investors.</p>
+                <RegenerateButton platform="linkedin" />
+              </div>
+              <LinkedInPreview caption={getCaption("linkedin")} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} />
             </div>
           )}
 
           {/* Nextdoor */}
           {active === "nextdoor" && social_captions?.nextdoor && (
-            <div className="space-y-5">
-              <p className="font-sans text-xs text-stone bg-green-50 border border-green-200 rounded-md px-3 py-2">
-                Download the preview or copy the text. Post in the For Sale section of your neighborhood feed.
-              </p>
-              <NextdoorPreview caption={social_captions.nextdoor} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} />
+            <div className="space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <p className="font-sans text-xs text-stone">Post in the For Sale section of your neighborhood feed.</p>
+                <RegenerateButton platform="nextdoor" />
+              </div>
+              <NextdoorPreview caption={getCaption("nextdoor")} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} />
             </div>
           )}
 
@@ -344,14 +430,41 @@ export default function PlatformPanel({ social_captions, platform_content, photo
 
           {/* Twitter/X */}
           {active === "twitter" && social_captions?.twitter && (
-            <div className="space-y-5">
-              <p className="font-sans text-xs text-stone bg-stone/5 border border-stone/20 rounded-md px-3 py-2">
-                Download the preview card or copy the text. Attach your cover photo for maximum engagement.
-              </p>
-              <TwitterPreview caption={social_captions.twitter} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} />
+            <div className="space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <p className="font-sans text-xs text-stone">Download the card or copy the text. Attach your cover photo.</p>
+                <RegenerateButton platform="twitter" />
+              </div>
+              <TwitterPreview caption={getCaption("twitter")} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} />
             </div>
           )}
         </div>
+      )}
+
+      {/* Post Approval Modal */}
+      {modal && (
+        <PostApprovalModal
+          platform={modal.platform}
+          initialCaption={modal.caption}
+          photos={photos}
+          address={address}
+          price={price}
+          bedrooms={bedrooms}
+          bathrooms={bathrooms}
+          sqft={sqft}
+          brand={brand}
+          agentName={agentName}
+          agentPhone={agentPhone}
+          agentWebsite={agentWebsite}
+          logoUrl={logoUrl}
+          selectedVariation={modal.variation}
+          listingId={listingId}
+          onClose={() => setModal(null)}
+          onPosted={(platform) => {
+            setPostedPlatforms(prev => new Set(Array.from(prev).concat(platform)));
+            setModal(null);
+          }}
+        />
       )}
     </div>
   );
