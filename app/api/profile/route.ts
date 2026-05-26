@@ -8,15 +8,14 @@ export async function PATCH(request: Request) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json();
-  const { full_name, brokerage, phone, license_number } = body;
+  const { full_name, brokerage, phone, license_number, website } = body;
 
-  // Build update object with only provided fields
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updates: any = { updated_at: new Date().toISOString() };
   if (full_name !== undefined) updates.full_name = full_name;
   if (brokerage !== undefined) updates.brokerage = brokerage;
   if (phone !== undefined) updates.phone = phone;
   if (license_number !== undefined) updates.license_number = license_number;
+  if (website !== undefined) updates.website = website;
 
   const { error } = await supabase
     .from('profiles')
