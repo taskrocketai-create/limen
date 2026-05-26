@@ -67,6 +67,7 @@ interface PlatformPanelProps {
   brand?: BrandProfile | null;
   agentName?: string;
   agentPhone?: string;
+  agentWebsite?: string;
   logoUrl?: string | null;
   headshotUrl?: string | null;
 }
@@ -179,7 +180,7 @@ function PhotoStrip({ photos, max = 5, label }: { photos: Photo[]; max?: number;
   );
 }
 
-export default function PlatformPanel({ social_captions, platform_content, photos, address, price, bedrooms, bathrooms, sqft, brand, agentName, logoUrl }: PlatformPanelProps) {
+export default function PlatformPanel({ social_captions, platform_content, photos, address, price, bedrooms, bathrooms, sqft, brand, agentName, agentPhone, agentWebsite, logoUrl }: PlatformPanelProps) {
   const [active, setActive] = useState<PlatformId | null>(null);
 
   const hasContent = (id: PlatformId) => {
@@ -286,7 +287,7 @@ export default function PlatformPanel({ social_captions, platform_content, photo
               <p className="font-sans text-xs text-stone bg-blue-50 border border-blue-200 rounded-md px-3 py-2">
                 Screenshot or download the preview below, then post directly to Facebook with your photos attached.
               </p>
-              <FacebookPreview caption={social_captions.facebook} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} logoUrl={logoUrl} />
+              <FacebookPreview caption={social_captions.facebook} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} />
             </div>
           )}
 
@@ -296,7 +297,7 @@ export default function PlatformPanel({ social_captions, platform_content, photo
               <p className="font-sans text-xs text-stone bg-pink-50 border border-pink-200 rounded-md px-3 py-2">
                 Download the preview card below or copy the caption. Post to Instagram with your best photo as the cover.
               </p>
-              <InstagramPreview caption={social_captions.instagram} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} logoUrl={logoUrl} />
+              <InstagramPreview caption={social_captions.instagram} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} />
             </div>
           )}
 
@@ -306,7 +307,7 @@ export default function PlatformPanel({ social_captions, platform_content, photo
               <p className="font-sans text-xs text-stone bg-stone/5 border border-stone/20 rounded-md px-3 py-2">
                 Use this script for a walking-tour video. Download the thumbnail card to use as your TikTok cover image.
               </p>
-              <TikTokPreview caption={social_captions.tiktok} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} logoUrl={logoUrl} />
+              <TikTokPreview caption={social_captions.tiktok} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} />
             </div>
           )}
 
@@ -316,7 +317,7 @@ export default function PlatformPanel({ social_captions, platform_content, photo
               <p className="font-sans text-xs text-stone bg-blue-50 border border-blue-200 rounded-md px-3 py-2">
                 Download the preview or copy the text. Post to LinkedIn for professional network reach.
               </p>
-              <LinkedInPreview caption={social_captions.linkedin} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} logoUrl={logoUrl} />
+              <LinkedInPreview caption={social_captions.linkedin} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} />
             </div>
           )}
 
@@ -326,7 +327,7 @@ export default function PlatformPanel({ social_captions, platform_content, photo
               <p className="font-sans text-xs text-stone bg-green-50 border border-green-200 rounded-md px-3 py-2">
                 Download the preview or copy the text. Post in the For Sale section of your neighborhood feed.
               </p>
-              <NextdoorPreview caption={social_captions.nextdoor} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} logoUrl={logoUrl} />
+              <NextdoorPreview caption={social_captions.nextdoor} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} />
             </div>
           )}
 
@@ -347,7 +348,7 @@ export default function PlatformPanel({ social_captions, platform_content, photo
               <p className="font-sans text-xs text-stone bg-stone/5 border border-stone/20 rounded-md px-3 py-2">
                 Download the preview card or copy the text. Attach your cover photo for maximum engagement.
               </p>
-              <TwitterPreview caption={social_captions.twitter} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} logoUrl={logoUrl} />
+              <TwitterPreview caption={social_captions.twitter} photos={photos} address={address} price={price} bedrooms={bedrooms} bathrooms={bathrooms} sqft={sqft} brand={brand} agentName={agentName} agentPhone={agentPhone} agentWebsite={agentWebsite} logoUrl={logoUrl} />
             </div>
           )}
         </div>
