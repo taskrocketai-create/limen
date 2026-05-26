@@ -76,14 +76,14 @@ export async function POST(
   // Fetch latest ai_output separately to avoid join issues
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: latestOutput } = await (supabase as any)
-    .from("ai_outputs")
-    .select("listing_description")
-    .eq("listing_id", params.id)
-    .order("version", { ascending: false })
-    .limit(1)
-    .single() as {
-      data: { listing_description: string | null } | null
-    };
+  .from("ai_outputs")
+  .select("listing_description")
+  .eq("listing_id", params.id)
+  .order("version", { ascending: false })
+  .limit(1)
+  .maybeSingle() as {
+    data: { listing_description: string | null } | null
+  };
 
   const brand = profile?.brand_profile ?? {};
   const details = listing.listing_details ?? {};
