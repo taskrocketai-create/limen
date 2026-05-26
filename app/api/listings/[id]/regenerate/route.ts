@@ -77,6 +77,7 @@ export async function POST(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let latestOutput: { listing_description: string | null } | null = null;
 try {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (supabase as any)
     .from("ai_outputs")
     .select("listing_description")
