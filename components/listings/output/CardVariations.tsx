@@ -44,6 +44,8 @@ function Logo({ logoUrl, agentName, height, filter }: { logoUrl?: string | null;
   if (logoUrl) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
+      // eslint-disable-next-line @next/next/no-img-element
+
       <img src={logoUrl} alt="Logo" crossOrigin="anonymous"
         style={{ height, maxWidth: "120px", objectFit: "contain", filter: filter ?? "brightness(0) invert(1)" }} />
     );
@@ -71,6 +73,8 @@ export function VariationCinematic({ photos, address, price, bedrooms, bathrooms
     <div style={{ position: "relative", width: "100%", height: "100%", background: "#0a0a0a", fontFamily: "Georgia, serif", overflow: "hidden" }}>
       {cover && (
         // eslint-disable-next-line @next/next/no-img-element
+        // eslint-disable-next-line @next/next/no-img-element
+
         <img src={cover.url} alt="" crossOrigin="anonymous"
           style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.5 }} />
       )}
@@ -126,7 +130,8 @@ export function VariationSplit({ photos, address, price, bedrooms, bathrooms, sq
     return (
       <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
         <div style={{ flex: "0 0 60%", position: "relative", overflow: "hidden" }}>
-          {cover && <img src={cover.url} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+          {cover && // eslint-disable-next-line @next/next/no-img-element
+ <img src={cover.url} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
           <div style={{ position: "absolute", top: "14px", left: "14px", right: "14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <Logo logoUrl={logoUrl} agentName={agentName} height="24px" />
             <div style={{ background: b.accent, color: b.primary, fontSize: "8px", fontWeight: "700", letterSpacing: "1.5px", textTransform: "uppercase", padding: "4px 10px" }}>{b.badge}</div>
@@ -153,7 +158,8 @@ export function VariationSplit({ photos, address, price, bedrooms, bathrooms, sq
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
       <div style={{ flex: "0 0 60%", position: "relative", overflow: "hidden" }}>
-        {cover && <img src={cover.url} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+        {cover && // eslint-disable-next-line @next/next/no-img-element
+ <img src={cover.url} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
         <div style={{ position: "absolute", inset: 0, background: `linear-gradient(to right, transparent 70%, ${b.primary} 100%)` }} />
       </div>
       <div style={{ flex: "0 0 40%", background: b.primary, padding: "16px 14px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
@@ -204,6 +210,8 @@ export function VariationBoldHeader({ photos, address, price, bedrooms, bathroom
       <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
         {cover ? (
           // eslint-disable-next-line @next/next/no-img-element
+          // eslint-disable-next-line @next/next/no-img-element
+
           <img src={cover.url} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         ) : (
           <div style={{ width: "100%", height: "100%", background: "#2a2a28" }} />
@@ -240,6 +248,8 @@ export function VariationPostcard({ photos, address, price, bedrooms, bathrooms,
       <div style={{ flex: 1, position: "relative", overflow: "hidden", marginBottom: "8px" }}>
         {cover ? (
           // eslint-disable-next-line @next/next/no-img-element
+          // eslint-disable-next-line @next/next/no-img-element
+
           <img src={cover.url} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         ) : (
           <div style={{ width: "100%", height: "100%", background: "#e8e4dc" }} />
@@ -295,6 +305,8 @@ export function VariationMagazine({ photos, address, price, bedrooms, bathrooms,
       <div style={{ flex: `0 0 ${photoH}`, position: "relative", overflow: "hidden" }}>
         {cover ? (
           // eslint-disable-next-line @next/next/no-img-element
+          // eslint-disable-next-line @next/next/no-img-element
+
           <img src={cover.url} alt="" crossOrigin="anonymous" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         ) : (
           <div style={{ width: "100%", height: "100%", background: "#e8e4dc" }} />
