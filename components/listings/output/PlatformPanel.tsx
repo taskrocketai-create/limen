@@ -204,9 +204,15 @@ export default function PlatformPanel({ social_captions, platform_content, photo
     return VARIATION_ORDER[overlayIndexes[platform] ?? 0];
   };
 
+  const [regenError, setRegenError] = useState<string | null>(null);
+
   const handleRegenerate = async (platform: string) => {
-    if (!listingId) return;
+    if (!listingId) {
+      setRegenError("No listing ID — cannot regenerate.");
+      return;
+    }
     setRegenerating(platform);
+    setRegenError(null);
     try {
       const res = await fetch(`/api/listings/${listingId}/regenerate-caption`, {
         method: "POST",
@@ -214,7 +220,14 @@ export default function PlatformPanel({ social_captions, platform_content, photo
         body: JSON.stringify({ platform }),
       });
       const data = await res.json();
-      if (data.caption) setCaptions(prev => ({ ...prev, [platform]: data.caption }));
+      if (data.caption) {
+        setCaptions(prev => ({ ...prev, [platform]: data.caption }));
+      } else {
+        setRegenError(data.error ?? "No caption returned.");
+      }
+    } catch (err) {
+      setRegenError("Network error — try again.");
+      console.error(err);
     } finally {
       setRegenerating(null);
     }
@@ -229,21 +242,26 @@ export default function PlatformPanel({ social_captions, platform_content, photo
   };
 
   const RegenButtons = ({ platform }: { platform: string }) => (
-    <div className="flex gap-2 flex-wrap">
-      <button
-        onClick={() => handleRegenerate(platform)}
-        disabled={regenerating === platform}
-        className="flex items-center gap-1.5 px-3 py-1.5 border border-stone/20 rounded font-sans text-xs text-stone hover:border-gilt hover:text-gilt transition-colors disabled:opacity-50"
-      >
-        {regenerating === platform ? <><span className="animate-spin inline-block">↺</span> Regenerating…</> : <>↺ Regenerate caption</>}
-      </button>
-      <button
-        onClick={() => handleRegenerateOverlay(platform)}
-        disabled={regeneratingOverlay === platform}
-        className="flex items-center gap-1.5 px-3 py-1.5 border border-stone/20 rounded font-sans text-xs text-stone hover:border-gilt hover:text-gilt transition-colors disabled:opacity-50"
-      >
-        {regeneratingOverlay === platform ? <><span className="animate-spin inline-block">↺</span> Switching…</> : <>🎨 Regenerate overlay</>}
-      </button>
+    <div className="space-y-2">
+      <div className="flex gap-2 flex-wrap">
+        <button
+          onClick={() => handleRegenerate(platform)}
+          disabled={regenerating === platform}
+          className="flex items-center gap-1.5 px-3 py-1.5 border border-stone/20 rounded font-sans text-xs text-stone hover:border-gilt hover:text-gilt transition-colors disabled:opacity-50"
+        >
+          {regenerating === platform ? <><span className="animate-spin inline-block">↺</span> Regenerating…</> : <>↺ Regenerate caption</>}
+        </button>
+        <button
+          onClick={() => handleRegenerateOverlay(platform)}
+          disabled={regeneratingOverlay === platform}
+          className="flex items-center gap-1.5 px-3 py-1.5 border border-stone/20 rounded font-sans text-xs text-stone hover:border-gilt hover:text-gilt transition-colors disabled:opacity-50"
+        >
+          {regeneratingOverlay === platform ? <><span className="animate-spin inline-block">↺</span> Switching…</> : <>✨ Next design</>}
+        </button>
+      </div>
+      {regenError && (
+        <p className="font-sans text-xs text-red-500">{regenError}</p>
+      )}
     </div>
   );
 
