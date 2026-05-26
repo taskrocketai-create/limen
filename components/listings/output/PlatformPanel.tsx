@@ -188,21 +188,22 @@ function PhotoStrip({ photos, max = 5, label }: { photos: Photo[]; max?: number;
 export default function PlatformPanel({ social_captions, platform_content, photos, address, listingId, isLocked, isPublishPlan, price, bedrooms, bathrooms, sqft, brand, agentName, agentPhone, agentWebsite, logoUrl, headshotUrl }: PlatformPanelProps) {
   const [active, setActive] = useState<PlatformId | null>(null);
   const [captions, setCaptions] = useState<Partial<Record<string, string>>>({});
-  const [photoIndexes, setPhotoIndexes] = useState<Partial<Record<string, number>>>({});
+  const [overlayIndexes, setOverlayIndexes] = useState<Partial<Record<string, number>>>({});
   const [regenerating, setRegenerating] = useState<string | null>(null);
-  const [regeneratingPhoto, setRegeneratingPhoto] = useState<string | null>(null);
+  const [regeneratingOverlay, setRegeneratingOverlay] = useState<string | null>(null);
   const [postedPlatforms, setPostedPlatforms] = useState<Set<string>>(new Set());
   const [modal, setModal] = useState<{ platform: "facebook" | "instagram"; caption: string; variation: VariationType } | null>(null);
+
+  const VARIATION_ORDER: VariationType[] = ["cinematic", "split", "bold_header", "postcard", "magazine"];
 
   const getCaption = (platform: string): string => {
     return captions[platform] ?? (social_captions as Record<string, string>)?.[platform] ?? "";
   };
 
-  const getPhotos = (platform: string): Photo[] => {
-    const idx = photoIndexes[platform] ?? 0;
-    if (idx === 0) return photos;
-    // Rotate photos so the selected index is first
-    return [...photos.slice(idx), ...photos.slice(0, idx)];
+  const getPhotos = (_platform: string): Photo[] => photos;
+
+  const getVariation = (platform: string): VariationType => {
+    return VARIATION_ORDER[overlayIndexes[platform] ?? 0];
   };
 
   const handleRegenerate = async (platform: string) => {
@@ -221,12 +222,12 @@ export default function PlatformPanel({ social_captions, platform_content, photo
     }
   };
 
-  const handleRegeneratePhoto = (platform: string) => {
-    setRegeneratingPhoto(platform);
-    const current = photoIndexes[platform] ?? 0;
-    const next = (current + 1) % Math.max(photos.length, 1);
-    setPhotoIndexes(prev => ({ ...prev, [platform]: next }));
-    setTimeout(() => setRegeneratingPhoto(null), 300);
+  const handleRegenerateOverlay = (platform: string) => {
+    setRegeneratingOverlay(platform);
+    const current = overlayIndexes[platform] ?? 0;
+    const next = (current + 1) % VARIATION_ORDER.length;
+    setOverlayIndexes(prev => ({ ...prev, [platform]: next }));
+    setTimeout(() => setRegeneratingOverlay(null), 300);
   };
 
   const RegenButtons = ({ platform }: { platform: string }) => (
@@ -238,15 +239,13 @@ export default function PlatformPanel({ social_captions, platform_content, photo
       >
         {regenerating === platform ? <><span className="animate-spin inline-block">↺</span> Regenerating…</> : <>↺ Regenerate caption</>}
       </button>
-      {photos.length > 1 && (
-        <button
-          onClick={() => handleRegeneratePhoto(platform)}
-          disabled={regeneratingPhoto === platform}
-          className="flex items-center gap-1.5 px-3 py-1.5 border border-stone/20 rounded font-sans text-xs text-stone hover:border-gilt hover:text-gilt transition-colors disabled:opacity-50"
-        >
-          {regeneratingPhoto === platform ? <><span className="animate-spin inline-block">↺</span> Switching…</> : <>🖼 Regenerate image</>}
-        </button>
-      )}
+      <button
+        onClick={() => handleRegenerateOverlay(platform)}
+        disabled={regeneratingOverlay === platform}
+        className="flex items-center gap-1.5 px-3 py-1.5 border border-stone/20 rounded font-sans text-xs text-stone hover:border-gilt hover:text-gilt transition-colors disabled:opacity-50"
+      >
+        {regeneratingOverlay === platform ? <><span className="animate-spin inline-block">↺</span> Switching…</> : <>🎨 Regenerate overlay</>}
+      </button>
     </div>
   );
 
