@@ -10,6 +10,7 @@ export async function PATCH(request: Request) {
   const body = await request.json();
   const { full_name, brokerage, phone, license_number, website } = body;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updates: any = { updated_at: new Date().toISOString() };
   if (full_name !== undefined) updates.full_name = full_name;
   if (brokerage !== undefined) updates.brokerage = brokerage;
