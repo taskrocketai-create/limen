@@ -77,6 +77,7 @@ interface ListingOutputClientProps {
   ai_outputs: AiOutput[];
   listing_locked: boolean;
   packages_used: number;
+  subscription_status?: string | null;
   brand?: {
     primary_color?: string;
     secondary_color?: string;
@@ -133,6 +134,7 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
     intake_token, intake_sent_at, intake_completed_at,
     listing_details, photos, ai_outputs,
     listing_locked, packages_used: initialPackagesUsed,
+    subscription_status,
     brand, agent_name, agent_phone, agent_website, logo_url, headshot_url,
   } = props;
 
@@ -143,6 +145,7 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [packagesUsed, setPackagesUsed] = useState(initialPackagesUsed);
   const isLocked = listing_locked;
+  const isPublishPlan = subscription_status === "active" || subscription_status === "trialing";
   const [listingStyle, setListingStyle] = useState<ListingStyle>({
     tone: "",
     launch_angle: "",
@@ -528,6 +531,9 @@ export default function ListingOutputClient(props: ListingOutputClientProps) {
                   platform_content={currentOutput.platform_content}
                   photos={photos}
                   address={`${address_line1}, ${city}, ${state} ${zip}`}
+                  listingId={id}
+                  isLocked={isLocked}
+                  isPublishPlan={isPublishPlan}
                   price={price}
                   bedrooms={bedrooms}
                   bathrooms={bathrooms}
