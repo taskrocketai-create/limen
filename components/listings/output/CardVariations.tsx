@@ -12,6 +12,7 @@ interface Photo {
 export interface CardVariationProps {
   photos: Photo[];
   address: string;
+  caption?: string;
   price?: number | null;
   bedrooms?: number | null;
   bathrooms?: number | null;
@@ -61,7 +62,7 @@ function Logo({ logoUrl, agentName, height, filter }: { logoUrl?: string | null;
 // STYLE 1 — CINEMATIC
 // Full-bleed dark photo. Large centered serif address. Minimal. Editorial.
 // ===========================================================================
-export function VariationCinematic({ photos, address, price, bedrooms, bathrooms, sqft, brand, agentName, logoUrl, isVertical }: CardVariationProps) {
+export function VariationCinematic({ photos, address, caption, price, bedrooms, bathrooms, sqft, brand, agentName, logoUrl, isVertical }: CardVariationProps) {
   const cover = photos[0];
   const b = getBrand(brand);
   const shortAddress = address.split(",")[0];
@@ -103,6 +104,11 @@ export function VariationCinematic({ photos, address, price, bedrooms, bathrooms
             {sqft && <span>{sqft.toLocaleString()} SF</span>}
           </div>
         )}
+        {caption && (
+          <div style={{ marginTop: "12px", fontSize: isVertical ? "11px" : "9px", color: "rgba(255,255,255,0.55)", fontFamily: "Georgia, serif", fontStyle: "italic", lineHeight: 1.5, maxWidth: "80%", display: "-webkit-box", WebkitLineClamp: isVertical ? 3 : 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+            {caption}
+          </div>
+        )}
       </div>
 
       {/* Bottom */}
@@ -118,7 +124,7 @@ export function VariationCinematic({ photos, address, price, bedrooms, bathrooms
 // STYLE 2 — SPLIT PANEL
 // Photo left 60%, brand color panel right 40%. All info stacked in panel.
 // ===========================================================================
-export function VariationSplit({ photos, address, price, bedrooms, bathrooms, sqft, brand, agentName, logoUrl, isVertical }: CardVariationProps) {
+export function VariationSplit({ photos, address, caption, price, bedrooms, bathrooms, sqft, brand, agentName, logoUrl, isVertical }: CardVariationProps) {
   const cover = photos[0];
   const b = getBrand(brand);
   const shortAddress = address.split(",")[0];
@@ -170,7 +176,8 @@ export function VariationSplit({ photos, address, price, bedrooms, bathrooms, sq
           {priceStr && <div style={{ fontFamily: "Georgia, serif", fontSize: "20px", color: b.accent, lineHeight: 1, marginBottom: "6px" }}>{priceStr}</div>}
           <div style={{ fontFamily: "Georgia, serif", fontSize: "14px", color: "#fff", lineHeight: 1.2, marginBottom: "3px" }}>{shortAddress}</div>
           <div style={{ fontSize: "9px", color: "rgba(255,255,255,0.45)", marginBottom: "12px" }}>{cityState}</div>
-          {specs && <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "10px", fontSize: "9px", color: b.accent, letterSpacing: "1px" }}>{specs}</div>}
+          {specs && <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: "10px", fontSize: "9px", color: b.accent, letterSpacing: "1px", marginBottom: "8px" }}>{specs}</div>}
+          {caption && <div style={{ fontSize: "8px", color: "rgba(255,255,255,0.45)", fontFamily: "Georgia, serif", fontStyle: "italic", lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{caption}</div>}
         </div>
         <div>
           <div style={{ fontSize: "8px", color: "rgba(255,255,255,0.5)", marginBottom: "3px" }}>{agentName ?? ""}</div>
@@ -185,7 +192,7 @@ export function VariationSplit({ photos, address, price, bedrooms, bathrooms, sq
 // STYLE 3 — BOLD HEADER
 // Giant color band top with huge price type. Photo fills bottom.
 // ===========================================================================
-export function VariationBoldHeader({ photos, address, price, bedrooms, bathrooms, sqft, brand, agentName, logoUrl, isVertical }: CardVariationProps) {
+export function VariationBoldHeader({ photos, address, caption, price, bedrooms, bathrooms, sqft, brand, agentName, logoUrl, isVertical }: CardVariationProps) {
   const cover = photos[0];
   const b = getBrand(brand);
   const shortAddress = address.split(",")[0];
@@ -216,11 +223,14 @@ export function VariationBoldHeader({ photos, address, price, bedrooms, bathroom
         ) : (
           <div style={{ width: "100%", height: "100%", background: "#2a2a28" }} />
         )}
-        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: `${b.primary}ee`, padding: "8px 18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ fontSize: "9px", color: b.accent, letterSpacing: "1px" }}>{specs}</div>
-          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-            <span style={{ fontSize: "8px", color: "rgba(255,255,255,0.4)" }}>{agentName ?? ""}</span>
-            <span style={{ fontSize: "6px", letterSpacing: "1px", textTransform: "uppercase", color: "rgba(255,255,255,0.2)" }}>Powered by Limen</span>
+        <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: `${b.primary}ee`, padding: "10px 18px" }}>
+          {caption && <div style={{ fontSize: isVertical ? "10px" : "8px", color: "rgba(255,255,255,0.6)", fontFamily: "Georgia, serif", fontStyle: "italic", lineHeight: 1.5, marginBottom: "6px", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{caption}</div>}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ fontSize: "9px", color: b.accent, letterSpacing: "1px" }}>{specs}</div>
+            <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+              <span style={{ fontSize: "8px", color: "rgba(255,255,255,0.4)" }}>{agentName ?? ""}</span>
+              <span style={{ fontSize: "6px", letterSpacing: "1px", textTransform: "uppercase", color: "rgba(255,255,255,0.2)" }}>Powered by Limen</span>
+            </div>
           </div>
         </div>
       </div>
@@ -232,7 +242,7 @@ export function VariationBoldHeader({ photos, address, price, bedrooms, bathroom
 // STYLE 4 — POSTCARD
 // White border frame around photo. Clean bottom strip. Classic print feel.
 // ===========================================================================
-export function VariationPostcard({ photos, address, price, bedrooms, bathrooms, sqft, brand, agentName, logoUrl, isVertical }: CardVariationProps) {
+export function VariationPostcard({ photos, address, caption, price, bedrooms, bathrooms, sqft, brand, agentName, logoUrl, isVertical }: CardVariationProps) {
   const cover = photos[0];
   const b = getBrand(brand);
   const shortAddress = address.split(",")[0];
@@ -290,7 +300,7 @@ export function VariationPostcard({ photos, address, price, bedrooms, bathrooms,
 // STYLE 5 — MAGAZINE
 // Photo top half. Clean white bottom with large serif. Very professional.
 // ===========================================================================
-export function VariationMagazine({ photos, address, price, bedrooms, bathrooms, sqft, brand, agentName, logoUrl, isVertical }: CardVariationProps) {
+export function VariationMagazine({ photos, address, caption, price, bedrooms, bathrooms, sqft, brand, agentName, logoUrl, isVertical }: CardVariationProps) {
   const cover = photos[0];
   const b = getBrand(brand);
   const shortAddress = address.split(",")[0];
@@ -330,6 +340,7 @@ export function VariationMagazine({ photos, address, price, bedrooms, bathrooms,
           {priceStr && (
             <div style={{ fontFamily: "Georgia, serif", fontSize: isVertical ? "26px" : "20px", color: b.accent, lineHeight: 1 }}>{priceStr}</div>
           )}
+          {caption && <div style={{ fontSize: isVertical ? "10px" : "8px", color: "#6B6456", fontFamily: "Georgia, serif", fontStyle: "italic", lineHeight: 1.5, marginTop: "6px", display: "-webkit-box", WebkitLineClamp: isVertical ? 3 : 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{caption}</div>}
         </div>
         <div>
           <div style={{ height: "1px", background: "#e8e4dc", marginBottom: "8px" }} />
