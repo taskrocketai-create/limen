@@ -20,7 +20,7 @@ export async function POST(
     .from("listings")
     .select("address_line1, city, state, zip, price, bedrooms, bathrooms, sqft, listing_details, ai_outputs(*)")
     .eq("id", params.id)
-    .eq("profile_id", user.id)
+    .eq("realtor_id", user.id)
     .single();
 
   if (!listing) return NextResponse.json({ error: "Listing not found" }, { status: 404 });
