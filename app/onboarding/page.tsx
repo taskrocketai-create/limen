@@ -124,8 +124,16 @@ export default function OnboardingPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push("/login"); return; }
 
-      // Upload logo if provided
-      let logoUrl: string | null = null;
+      // Fetch existing profile to preserve logo/headshot if not re-uploaded
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: existingProfile } = await (supabase as any)
+        .from("profiles")
+        .select("logo_url, headshot_url")
+        .eq("id", user.id)
+        .single() as { data: { logo_url: string | null; headshot_url: string | null } | null };
+
+      // Upload logo if provided, otherwise keep existing
+      let logoUrl: string | null = existingProfile?.logo_url ?? null;
       if (logoFile) {
         const ext = logoFile.name.split(".").pop();
         const path = `${user.id}/logo.${ext}`;
@@ -138,8 +146,8 @@ export default function OnboardingPage() {
         }
       }
 
-      // Upload headshot if provided
-      let headshotUrl: string | null = null;
+      // Upload headshot if provided, otherwise keep existing
+      let headshotUrl: string | null = existingProfile?.headshot_url ?? null;
       if (headshotFile) {
         const ext = headshotFile.name.split(".").pop();
         const path = `${user.id}/headshot.${ext}`;
@@ -161,17 +169,17 @@ export default function OnboardingPage() {
 
       const brandProfile = await res.json();
 
-      // Save everything to profile
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any)
-        .from("profiles")
-        .update({
+      // Save everything to profile via API route (handles RLS correctly)
+      await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           onboarding_completed: true,
           brand_profile: brandProfile,
           logo_url: logoUrl,
           headshot_url: headshotUrl,
-        })
-        .eq("id", user.id);
+        }),
+      });
 
       setStep(9);
     } catch {
