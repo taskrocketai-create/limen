@@ -191,7 +191,6 @@ export default function PlatformPanel({ social_captions, platform_content, photo
   const [captions, setCaptions] = useState<Partial<Record<string, string>>>({});
   const [overlayIndexes, setOverlayIndexes] = useState<Partial<Record<string, number>>>({});
   const [regenerating, setRegenerating] = useState<string | null>(null);
-  const [regeneratingOverlay, setRegeneratingOverlay] = useState<string | null>(null);
   const [postedPlatforms, setPostedPlatforms] = useState<Set<string>>(new Set());
   const [modal, setModal] = useState<{ platform: "facebook" | "instagram"; caption: string; variation: VariationType } | null>(null);
 
@@ -261,12 +260,10 @@ export default function PlatformPanel({ social_captions, platform_content, photo
     }
   };
 
-  const handleRegenerateOverlay = (platform: string) => {
-    setRegeneratingOverlay(platform);
-    const current = overlayIndexes[platform] ?? 0;
+  const handleRegenerateOverlay = (_platform: string) => {
+    const current = overlayIndexes[_platform] ?? 0;
     const next = (current + 1) % VARIATION_ORDER.length;
-    setOverlayIndexes(prev => ({ ...prev, [platform]: next }));
-    setTimeout(() => setRegeneratingOverlay(null), 300);
+    setOverlayIndexes(prev => ({ ...prev, [_platform]: next }));
   };
 
   const RegenButtons = ({ platform }: { platform: string }) => (
