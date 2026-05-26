@@ -9,20 +9,21 @@ interface Profile {
   full_name: string;
   brokerage: string;
   phone: string;
+  website: string;
 }
 
 export default function SettingsPage() {
   const supabase = createClient();
   const [userEmail, setUserEmail] = useState<string>('');
   const [userId, setUserId] = useState<string>('');
-  const [profile, setProfile] = useState<Profile>({ full_name: '', brokerage: '', phone: '' });
+  const [profile, setProfile] = useState<Profile>({ full_name: '', brokerage: '', phone: '', website: '' });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
 
   const loadProfile = useCallback(async (id: string) => {
     const { data } = await supabase.from('profiles').select('*').eq('id', id).maybeSingle();
-    if (data) setProfile({ full_name: data.full_name ?? '', brokerage: data.brokerage ?? '', phone: data.phone ?? '' });
+    if (data) setProfile({ full_name: data.full_name ?? '', brokerage: data.brokerage ?? '', phone: data.phone ?? '', website: (data as any).website ?? '' });
   }, [supabase]);
 
   useEffect(() => {
@@ -103,6 +104,15 @@ export default function SettingsPage() {
                 onChange={e => setProfile(p => ({ ...p, phone: e.target.value }))}
                 className="w-full border border-[#E8E4DC] px-4 py-3 text-sm text-[#1A1814] focus:outline-none focus:border-[#C8A96E]"
                 placeholder="(000) 000-0000"
+              />
+            </div>
+            <div>
+              <label className="block text-xs tracking-widest uppercase text-[#6B6456] mb-2">Website</label>
+              <input
+                value={profile.website}
+                onChange={e => setProfile(p => ({ ...p, website: e.target.value }))}
+                className="w-full border border-[#E8E4DC] px-4 py-3 text-sm text-[#1A1814] focus:outline-none focus:border-[#C8A96E]"
+                placeholder="https://yourwebsite.com"
               />
             </div>
             <button
