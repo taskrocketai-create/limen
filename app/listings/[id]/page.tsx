@@ -189,8 +189,8 @@ export default async function ListingPage({ params }: ListingPageProps) {
       agent_name={agentProfile?.full_name ?? undefined}
       agent_phone={agentProfile?.phone ?? undefined}
       agent_website={agentProfile?.website ?? undefined}
-      logo_url={agentProfile?.logo_url ?? null}
-      headshot_url={agentProfile?.headshot_url ?? null}
+      logo_url={agentProfile?.logo_url ? `${agentProfile.logo_url}?v=${Date.now()}` : null}
+      headshot_url={agentProfile?.headshot_url ? `${agentProfile.headshot_url}?v=${Date.now()}` : null}
       listing_details={listing_details ?? null}
       photos={photos}
       ai_outputs={(ai_outputs ?? []).map((o) => ({
