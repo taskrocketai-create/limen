@@ -42,6 +42,7 @@ interface MarketingCardProps {
   agentWebsite?: string;
   logoUrl?: string | null;
   headshotUrl?: string | null;
+  aiImageUrl?: string | null;
   currentVariation?: VariationType;
   platform: "facebook" | "instagram" | "tiktok" | "twitter" | "linkedin" | "nextdoor";
 }
@@ -127,7 +128,9 @@ function PlatformPreview(props: MarketingCardProps) {
   const isVertical = props.platform === "tiktok";
 
   const variationProps: CardVariationProps = {
-    photos: props.photos,
+    photos: props.aiImageUrl
+      ? [{ id: "ai", url: props.aiImageUrl, path: "", sort_order: 0 }, ...props.photos]
+      : props.photos,
     address: props.address,
     caption: props.caption,
     price: props.price,
