@@ -123,6 +123,7 @@ function PlatformPreview(props: MarketingCardProps) {
     agentPhone: props.agentPhone,
     agentWebsite: props.agentWebsite,
     logoUrl: props.logoUrl,
+    headshotUrl: props.headshotUrl,
     isVertical,
   };
 
