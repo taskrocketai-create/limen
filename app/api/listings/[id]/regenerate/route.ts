@@ -49,32 +49,48 @@ export async function POST(
     }, { status: 429 });
   }
 
-  // Fetch listing
+  // Fetch listing — no ai_outputs join to avoid foreign key issues
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: listing } = await (supabase as any)
     .from("listings")
-    .select("address_line1, city, state, zip, price, bedrooms, bathrooms, sqft, listing_details, realtor_id, ai_outputs(*)")
+    .select("address_line1, city, state, zip, price, bedrooms, bathrooms, sqft, listing_details, realtor_id")
     .eq("id", params.id)
     .single() as {
       data: {
-        address_line1: string; city: string; state: string; zip: string;
-        price: number | null; bedrooms: number | null; bathrooms: number | null; sqft: number | null;
+        address_line1: string;
+        city: string;
+        state: string;
+        zip: string;
+        price: number | null;
+        bedrooms: number | null;
+        bathrooms: number | null;
+        sqft: number | null;
         listing_details: Record<string, unknown> | null;
         realtor_id: string;
-        ai_outputs: Array<{ description?: string }>;
       } | null
     };
 
   if (!listing) return NextResponse.json({ error: "Listing not found" }, { status: 404 });
   if (listing.realtor_id !== user.id) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
+  // Fetch latest ai_output separately to avoid join issues
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: latestOutput } = await (supabase as any)
+    .from("ai_outputs")
+    .select("listing_description")
+    .eq("listing_id", params.id)
+    .order("version", { ascending: false })
+    .limit(1)
+    .single() as {
+      data: { listing_description: string | null } | null
+    };
+
   const brand = profile?.brand_profile ?? {};
   const details = listing.listing_details ?? {};
   const highlights = Array.isArray(details.highlights) ? (details.highlights as string[]).join(", ") : "";
   const neighborhood = typeof details.neighborhood === "string" ? details.neighborhood : "";
   const recentUpdates = typeof details.recent_updates === "string" ? details.recent_updates : "";
-  const latestOutput = listing.ai_outputs?.[listing.ai_outputs.length - 1];
-  const existingDescription = latestOutput?.description ?? "";
+  const existingDescription = latestOutput?.listing_description ?? "";
   const address = `${listing.address_line1}, ${listing.city}, ${listing.state} ${listing.zip}`;
 
   const platformStyles: Record<string, string> = {
