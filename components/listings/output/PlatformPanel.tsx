@@ -206,55 +206,28 @@ export default function PlatformPanel({ social_captions, platform_content, photo
 
   const [regenError, setRegenError] = useState<string | null>(null);
   const [aiImageUrl, setAiImageUrl] = useState<string | null>(null);
-  const [generatingAiImage, setGeneratingAiImage] = useState(false);
-  const [aiImageUsage, setAiImageUsage] = useState<{ used: number; limit: number | string; remaining: number | string } | null>(null);
-  const [aiImageError, setAiImageError] = useState<string | null>(null);
-
-  const handleGenerateAiImage = async () => {
-    if (!listingId) return;
-    setGeneratingAiImage(true);
-    setAiImageError(null);
-    try {
-      const res = await fetch(`/api/listings/${listingId}/generate-ai-image`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-      const data = await res.json();
-      if (data.imageUrl) {
-        setAiImageUrl(data.imageUrl);
-        setAiImageUsage({ used: data.used, limit: data.limit, remaining: data.remaining });
-      } else {
-        setAiImageError(data.error ?? "Failed to generate image.");
-      }
-    } catch {
-      setAiImageError("Network error. Please try again.");
-    } finally {
-      setGeneratingAiImage(false);
-    }
-  };
+  const [regenUsage, setRegenUsage] = useState<{ used: number; limit: number | string; remaining: number | string } | null>(null);
 
   const handleRegenerate = async (platform: string) => {
-    if (!listingId) {
-      setRegenError("No listing ID — cannot regenerate.");
-      return;
-    }
+    if (!listingId) { setRegenError("Listing ID missing."); return; }
     setRegenerating(platform);
     setRegenError(null);
     try {
-      const res = await fetch(`/api/listings/${listingId}/regenerate-caption`, {
+      const res = await fetch(`/api/listings/${listingId}/regenerate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ platform }),
       });
       const data = await res.json();
-      if (data.caption) {
-        setCaptions(prev => ({ ...prev, [platform]: data.caption }));
+      if (data.error) {
+        setRegenError(data.error);
       } else {
-        setRegenError(data.error ?? "No caption returned.");
+        if (data.caption) setCaptions(prev => ({ ...prev, [platform]: data.caption }));
+        if (data.imageUrl) setAiImageUrl(data.imageUrl);
+        if (data.used !== undefined) setRegenUsage({ used: data.used, limit: data.limit, remaining: data.remaining });
       }
-    } catch (err) {
-      setRegenError("Network error — try again.");
-      console.error(err);
+    } catch {
+      setRegenError("Network error. Please try again.");
     } finally {
       setRegenerating(null);
     }
@@ -269,33 +242,20 @@ export default function PlatformPanel({ social_captions, platform_content, photo
 
   const RegenButtons = ({ platform }: { platform: string }) => (
     <div className="space-y-2">
-      <div className="flex gap-2 flex-wrap">
-        <button
-          onClick={() => handleRegenerate(platform)}
-          disabled={regenerating === platform}
-          className="flex items-center gap-1.5 px-3 py-1.5 border border-stone/20 rounded font-sans text-xs text-stone hover:border-gilt hover:text-gilt transition-colors disabled:opacity-50"
-        >
-          {regenerating === platform ? <><span className="animate-spin inline-block">↺</span> Regenerating…</> : <>↺ Regenerate caption</>}
-        </button>
-        <button
-          onClick={handleGenerateAiImage}
-          disabled={generatingAiImage}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-ink text-gilt border border-ink rounded font-sans text-xs hover:bg-gilt hover:text-ink transition-colors disabled:opacity-50"
-        >
-          {generatingAiImage ? <><span className="animate-spin inline-block">✦</span> Generating AI image…</> : <>✦ Generate AI image</>}
-        </button>
-      </div>
+      <button
+        onClick={() => handleRegenerate(platform)}
+        disabled={regenerating === platform}
+        className="flex items-center gap-2 px-4 py-2 bg-ink text-gilt rounded font-sans text-xs font-medium hover:bg-gilt hover:text-ink transition-colors disabled:opacity-50"
+      >
+        {regenerating === platform
+          ? <><span className="animate-spin inline-block">✦</span> Generating…</>
+          : <>✦ Regenerate</>}
+      </button>
       {regenError && <p className="font-sans text-xs text-red-500">{regenError}</p>}
-      {aiImageError && <p className="font-sans text-xs text-red-500">{aiImageError}</p>}
-      {aiImageUsage && (
-        <p className="font-sans text-xs text-stone/60">
-          AI images: {aiImageUsage.used} used · {aiImageUsage.remaining === "unlimited" ? "unlimited remaining" : `${aiImageUsage.remaining} remaining this month`}
+      {regenUsage && (
+        <p className="font-sans text-xs text-stone/50">
+          {regenUsage.remaining === "unlimited" ? "Unlimited regenerations" : `${regenUsage.remaining} of ${regenUsage.limit} remaining this month`}
         </p>
-      )}
-      {aiImageUrl && (
-        <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded font-sans text-xs text-green-700">
-          ✓ AI image applied to card
-        </div>
       )}
     </div>
   );
