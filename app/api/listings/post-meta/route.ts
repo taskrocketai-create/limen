@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { platform, caption, imageUrl, listingId } = await request.json();
+  const { platform, caption, imageUrl } = await request.json();
 
   // Get Meta connection
   const supabaseAdmin = createAdminClient();
