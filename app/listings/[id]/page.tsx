@@ -122,9 +122,9 @@ export default async function ListingPage({ params }: ListingPageProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: agentProfile } = await (supabase as any)
     .from("profiles")
-    .select("full_name, phone, brand_profile, logo_url, headshot_url")
+    .select("full_name, phone, website, brand_profile, logo_url, headshot_url")
     .eq("id", user.id)
-    .single() as { data: { full_name: string | null; phone: string | null; brand_profile: Record<string, string> | null; logo_url: string | null; headshot_url: string | null } | null };
+    .single() as { data: { full_name: string | null; phone: string | null; website: string | null; brand_profile: Record<string, string> | null; logo_url: string | null; headshot_url: string | null } | null };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: profileData } = await (supabase as any)
     .from("profiles")
@@ -187,6 +187,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
       brand={agentProfile?.brand_profile ?? null}
       agent_name={agentProfile?.full_name ?? undefined}
       agent_phone={agentProfile?.phone ?? undefined}
+      agent_website={agentProfile?.website ?? undefined}
       logo_url={agentProfile?.logo_url ?? null}
       headshot_url={agentProfile?.headshot_url ?? null}
       listing_details={listing_details ?? null}
