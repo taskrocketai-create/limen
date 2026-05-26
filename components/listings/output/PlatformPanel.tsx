@@ -11,6 +11,7 @@ import {
   type BrandProfile,
 } from "@/components/listings/output/SocialPreviews";
 import PostApprovalModal from "@/components/listings/output/PostApprovalModal";
+import FacebookPostPreviewModal from "@/components/listings/output/FacebookPostPreviewModal";
 
 interface MlsContent {
   description: string;
@@ -145,18 +146,40 @@ function BulletList({ label, items }: { label: string; items: string[] }) {
 
 type PlatformId = "mls" | "zillow" | "realtor_com" | "facebook" | "instagram" | "tiktok" | "linkedin" | "nextdoor" | "google" | "twitter";
 
-const PLATFORMS: { id: PlatformId; label: string; color: string; emoji: string }[] = [
-  { id: "mls", label: "MLS", color: "bg-ink text-gilt", emoji: "🏠" },
-  { id: "zillow", label: "Zillow", color: "bg-blue-600 text-white", emoji: "Z" },
-  { id: "realtor_com", label: "Realtor.com", color: "bg-red-600 text-white", emoji: "R" },
-  { id: "facebook", label: "Facebook", color: "bg-blue-500 text-white", emoji: "f" },
-  { id: "instagram", label: "Instagram", color: "bg-pink-500 text-white", emoji: "IG" },
-  { id: "tiktok", label: "TikTok", color: "bg-black text-white", emoji: "TT" },
-  { id: "linkedin", label: "LinkedIn", color: "bg-blue-700 text-white", emoji: "in" },
-  { id: "nextdoor", label: "Nextdoor", color: "bg-green-600 text-white", emoji: "ND" },
-  { id: "google", label: "Google", color: "bg-white text-ink border border-stone/20", emoji: "G" },
-  { id: "twitter", label: "X / Twitter", color: "bg-black text-white", emoji: "X" },
+const PLATFORMS: { id: PlatformId; label: string; shortLabel: string }[] = [
+  { id: "mls", label: "MLS", shortLabel: "MLS" },
+  { id: "zillow", label: "Zillow", shortLabel: "Z" },
+  { id: "realtor_com", label: "Realtor.com", shortLabel: "R" },
+  { id: "facebook", label: "Facebook", shortLabel: "f" },
+  { id: "instagram", label: "Instagram", shortLabel: "IG" },
+  { id: "tiktok", label: "TikTok", shortLabel: "TT" },
+  { id: "linkedin", label: "LinkedIn", shortLabel: "in" },
+  { id: "nextdoor", label: "Nextdoor", shortLabel: "ND" },
+  { id: "google", label: "Google", shortLabel: "G" },
+  { id: "twitter", label: "X / Twitter", shortLabel: "X" },
 ];
+
+function PlatformGlyph({ id, shortLabel }: { id: PlatformId; shortLabel: string }) {
+  if (id === "facebook") {
+    return (
+      <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor" aria-hidden="true">
+        <path d="M13.5 21v-7h2.35l.35-2.7H13.5V9.57c0-.78.22-1.31 1.34-1.31h1.43V5.84a18.8 18.8 0 0 0-2.08-.11c-2.06 0-3.47 1.25-3.47 3.56v2h-2.33V14h2.33v7h2.78z" />
+      </svg>
+    );
+  }
+
+  if (id === "instagram") {
+    return (
+      <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+        <rect x="3.5" y="3.5" width="17" height="17" rx="5" />
+        <circle cx="12" cy="12" r="4" />
+        <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+      </svg>
+    );
+  }
+
+  return <span className="text-[11px] font-semibold tracking-wide">{shortLabel}</span>;
+}
 
 function PhotoStrip({ photos, max = 5, label }: { photos: Photo[]; max?: number; label: string }) {
   const shown = photos.slice(0, max);
@@ -190,7 +213,12 @@ export default function PlatformPanel({ social_captions, platform_content, photo
   const [captions, setCaptions] = useState<Partial<Record<string, string>>>({});
   const [regenerating, setRegenerating] = useState<string | null>(null);
   const [postedPlatforms, setPostedPlatforms] = useState<Set<string>>(new Set());
-  const [modal, setModal] = useState<{ platform: "facebook" | "instagram"; caption: string } | null>(null);
+  const [instagramModal, setInstagramModal] = useState<{ caption: string } | null>(null);
+  const [facebookModalOpen, setFacebookModalOpen] = useState(false);
+  const [facebookCaption, setFacebookCaption] = useState("");
+  const [facebookPredictionId, setFacebookPredictionId] = useState<string | null>(null);
+  const [facebookPending, setFacebookPending] = useState(false);
+  const [facebookModalError, setFacebookModalError] = useState<string | null>(null);
 
   const getCaption = (platform: string): string => {
     return captions[platform] ?? (social_captions as Record<string, string>)?.[platform] ?? "";
@@ -198,14 +226,17 @@ export default function PlatformPanel({ social_captions, platform_content, photo
 
   const [regenError, setRegenError] = useState<string | null>(null);
   const [aiImageUrl, setAiImageUrl] = useState<string | null>(null);
-  const [regenUsage, setRegenUsage] = useState<{ used: number; limit: number | string; remaining: number | string } | null>(null);
 
   const handleRegenerate = async (platform: string) => {
     if (!listingId) { setRegenError("Listing ID missing."); return; }
+    if (platform === "facebook") {
+      await launchFacebookComposer();
+      return;
+    }
     setRegenerating(platform);
     setRegenError(null);
     try {
-      const res = await fetch(`/api/listings/${listingId}/regenerate`, {
+      const res = await fetch(`/api/listings/${listingId}/regenerate-caption`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ platform }),
@@ -215,8 +246,6 @@ export default function PlatformPanel({ social_captions, platform_content, photo
         setRegenError(data.error);
       } else {
         if (data.caption) setCaptions(prev => ({ ...prev, [platform]: data.caption }));
-        if (data.imageUrl) setAiImageUrl(data.imageUrl);
-        if (data.used !== undefined) setRegenUsage({ used: data.used, limit: data.limit, remaining: data.remaining });
       }
     } catch {
       setRegenError("Network error. Please try again.");
@@ -237,13 +266,42 @@ export default function PlatformPanel({ social_captions, platform_content, photo
           : <>✦ Regenerate</>}
       </button>
       {regenError && <p className="font-sans text-xs text-red-500">{regenError}</p>}
-      {regenUsage && (
-        <p className="font-sans text-xs text-stone/50">
-          {regenUsage.remaining === "unlimited" ? "Unlimited regenerations" : `${regenUsage.remaining} of ${regenUsage.limit} remaining this month`}
-        </p>
-      )}
     </div>
   );
+
+  async function launchFacebookComposer() {
+    if (!listingId) {
+      setFacebookModalError("Listing ID missing.");
+      return;
+    }
+
+    setFacebookModalOpen(true);
+    setFacebookPending(true);
+    setFacebookModalError(null);
+    setFacebookCaption(getCaption("facebook"));
+    setFacebookPredictionId(null);
+
+    try {
+      const response = await fetch(`/api/listings/${listingId}/regenerate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await response.json();
+
+      if (!response.ok || data.error) {
+        throw new Error(data.error || "Failed to generate Facebook post preview.");
+      }
+
+      setFacebookCaption(data.caption || "");
+      setCaptions((prev) => ({ ...prev, facebook: data.caption || "" }));
+      setFacebookPredictionId(data.predictionId || null);
+      setAiImageUrl(null);
+    } catch (error) {
+      setFacebookModalError(error instanceof Error ? error.message : "Failed to generate Facebook post preview.");
+    } finally {
+      setFacebookPending(false);
+    }
+  }
 
   const hasContent = (id: PlatformId) => {
     if (id === "mls") return !!platform_content?.mls;
@@ -264,30 +322,48 @@ export default function PlatformPanel({ social_captions, platform_content, photo
       <h3 className="font-display text-xl text-ink">Publish to platforms</h3>
 
       {/* Platform selector */}
-      <div className="flex flex-wrap gap-2">
+      <div className="rounded-2xl bg-[#1A1814] border border-[#C8A96E]/30 p-4 sm:p-5">
+        <p className="font-sans text-[11px] uppercase tracking-[0.2em] text-[#C8A96E] mb-3">Select platform</p>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
         {PLATFORMS.map((p) => {
           const ready = hasContent(p.id);
+          const isActive = active === p.id;
           return (
             <button
               key={p.id}
-              onClick={() => setActive(active === p.id ? null : p.id)}
+              onClick={() => {
+                if (p.id === "facebook" && ready && isLocked && isPublishPlan) {
+                  void launchFacebookComposer();
+                  setActive("facebook");
+                  return;
+                }
+                setActive(isActive ? null : p.id);
+              }}
               disabled={!ready}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg font-sans text-sm font-medium transition-all border-2 ${
-                active === p.id
-                  ? "border-gilt shadow-md scale-105"
+              className={`group rounded-xl border px-3 py-3 text-left transition-all font-sans ${
+                isActive
+                  ? "border-[#C8A96E] bg-[#24211B] text-[#F7F5F1]"
                   : ready
-                  ? "border-transparent hover:border-gilt/40"
-                  : "border-transparent opacity-40 cursor-not-allowed"
-              } ${p.color}`}
+                    ? "border-[#C8A96E]/25 bg-[#201D17] text-[#F7F5F1] hover:border-[#C8A96E] hover:bg-[#26221B]"
+                    : "border-transparent bg-[#2A2721]/40 text-[#F7F5F1]/35 cursor-not-allowed"
+              }`}
             >
-              <span className="text-xs font-bold">{p.emoji}</span>
-              {p.label}
+              <div className="flex items-center justify-between">
+                <span className="w-8 h-8 rounded-md bg-[#1A1814] border border-[#C8A96E]/30 text-[#F7F5F1] flex items-center justify-center">
+                  <PlatformGlyph id={p.id} shortLabel={p.shortLabel} />
+                </span>
+                {ready && <span className="w-1.5 h-1.5 rounded-full bg-[#C8A96E]" />}
+              </div>
+              <p className="mt-2 text-xs text-[#F7F5F1]">{p.label}</p>
               {ready && (
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
+                <p className="mt-0.5 text-[10px] text-[#C8A96E] tracking-wide">
+                  {p.id === "facebook" ? "Open composer" : "Content ready"}
+                </p>
               )}
             </button>
           );
         })}
+        </div>
       </div>
 
       {/* Content panel */}
@@ -347,18 +423,16 @@ export default function PlatformPanel({ social_captions, platform_content, photo
           {active === "facebook" && social_captions?.facebook && (
             <div className="space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-2">
-                <p className="font-sans text-xs text-stone">Review your card and caption before posting.</p>
-                <RegenButtons platform="facebook" />
+                <p className="font-sans text-xs text-stone">Launch the dark-mode Facebook composer with a fresh caption and AI image.</p>
               </div>
               {isLocked && (
                 isPublishPlan ? (
-                  postedPlatforms.has("facebook") ? (
-                    <div className="flex items-center gap-2 px-4 py-2.5 bg-green-50 border border-green-200 rounded-lg text-green-700 font-sans text-xs font-medium">✓ Posted to Facebook</div>
-                  ) : (
-                    <button onClick={() => setModal({ platform: "facebook", caption: getCaption("facebook") })} className="flex items-center gap-2 px-5 py-2.5 bg-[#1877F2] text-white font-sans text-sm font-medium rounded-lg hover:bg-[#166FE5] transition-colors">
-                      📘 Review & Post to Facebook
-                    </button>
-                  )
+                  <button
+                    onClick={() => void launchFacebookComposer()}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-[#1A1814] border border-[#C8A96E]/60 text-[#F7F5F1] font-sans text-sm rounded-lg hover:border-[#C8A96E] hover:text-[#C8A96E] transition-colors"
+                  >
+                    Open Facebook Composer
+                  </button>
                 ) : (
                   <div className="bg-gilt/10 border border-gilt/30 rounded-lg p-4 flex items-center justify-between gap-4">
                     <div>
@@ -385,7 +459,7 @@ export default function PlatformPanel({ social_captions, platform_content, photo
                   postedPlatforms.has("instagram") ? (
                     <div className="flex items-center gap-2 px-4 py-2.5 bg-green-50 border border-green-200 rounded-lg text-green-700 font-sans text-xs font-medium">✓ Posted to Instagram</div>
                   ) : (
-                    <button onClick={() => setModal({ platform: "instagram", caption: getCaption("instagram") })} className="flex items-center gap-2 px-5 py-2.5 text-white font-sans text-sm font-medium rounded-lg hover:opacity-90 transition-all" style={{ background: "linear-gradient(135deg, #833AB4, #FD1D1D, #F77737)" }}>
+                    <button onClick={() => setInstagramModal({ caption: getCaption("instagram") })} className="flex items-center gap-2 px-5 py-2.5 text-white font-sans text-sm font-medium rounded-lg hover:opacity-90 transition-all" style={{ background: "linear-gradient(135deg, #833AB4, #FD1D1D, #F77737)" }}>
                       📷 Review & Post to Instagram
                     </button>
                   )
@@ -460,11 +534,11 @@ export default function PlatformPanel({ social_captions, platform_content, photo
         </div>
       )}
 
-      {/* Post Approval Modal */}
-      {modal && (
+      {/* Instagram Approval Modal */}
+      {instagramModal && (
         <PostApprovalModal
-          platform={modal.platform}
-          initialCaption={modal.caption}
+          platform="instagram"
+          initialCaption={instagramModal.caption}
           photos={photos}
           address={address}
           price={price}
@@ -478,10 +552,24 @@ export default function PlatformPanel({ social_captions, platform_content, photo
           logoUrl={logoUrl}
           selectedVariation={"cinematic"}
           listingId={listingId}
-          onClose={() => setModal(null)}
+          onClose={() => setInstagramModal(null)}
           onPosted={(platform) => {
             setPostedPlatforms(prev => new Set(Array.from(prev).concat(platform)));
-            setModal(null);
+            setInstagramModal(null);
+          }}
+        />
+      )}
+
+      {facebookModalOpen && (
+        <FacebookPostPreviewModal
+          caption={facebookCaption}
+          predictionId={facebookPredictionId}
+          requestPending={facebookPending}
+          requestError={facebookModalError}
+          onClose={() => {
+            setFacebookModalOpen(false);
+            setFacebookPredictionId(null);
+            setFacebookModalError(null);
           }}
         />
       )}
