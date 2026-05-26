@@ -39,6 +39,7 @@ interface MarketingCardProps {
   brand?: BrandProfile | null;
   agentName?: string;
   agentPhone?: string;
+  agentWebsite?: string;
   logoUrl?: string | null;
   headshotUrl?: string | null;
   platform: "facebook" | "instagram" | "tiktok" | "twitter" | "linkedin" | "nextdoor";
@@ -119,6 +120,8 @@ function PlatformPreview(props: MarketingCardProps) {
     sqft: props.sqft,
     brand: props.brand,
     agentName: props.agentName,
+    agentPhone: props.agentPhone,
+    agentWebsite: props.agentWebsite,
     logoUrl: props.logoUrl,
     isVertical,
   };
