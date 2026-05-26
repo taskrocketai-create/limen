@@ -23,7 +23,7 @@ export default function SettingsPage() {
 
   const loadProfile = useCallback(async (id: string) => {
     const { data } = await supabase.from('profiles').select('*').eq('id', id).maybeSingle();
-    if (data) setProfile({ full_name: data.full_name ?? '', brokerage: data.brokerage ?? '', phone: data.phone ?? '', website: (data as any).website ?? '' });
+    if (data) setProfile({ full_name: data.full_name ?? '', brokerage: data.brokerage ?? '', phone: data.phone ?? '', website: (data as { website?: string }).website ?? '' });
   }, [supabase]);
 
   useEffect(() => {
