@@ -1,186 +1,202 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import Anthropic from "@anthropic-ai/sdk";
-import Replicate from "replicate";
 
 export const maxDuration = 300;
 
-const FACEBOOK_PROMPT_INSTRUCTIONS = `Generate a 2026-style real estate Facebook post caption.
-Tone: modern, conversational, lifestyle-focused, and not salesy.
-Lead with neighborhood/lifestyle context and end with a soft CTA.
-Length: 150-200 words maximum.
-Do not include hashtags.
-Return only the caption text.`;
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-type ListingRow = {
-  address_line1: string | null;
-  address_line2: string | null;
-  city: string | null;
-  state: string | null;
-  zip: string | null;
-  price: number | null;
-  bedrooms: number | null;
-  bathrooms: number | null;
-  sqft: number | null;
-};
-
-type ListingDetailsRow = {
-  highlights: string[] | string | null;
-  recent_updates: string | null;
-  neighborhood_notes: string | null;
-  seller_notes: string | null;
-};
-
-const formatCurrency = (value: number | null) => {
-  if (value == null) return "Price on request";
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
-};
-
-const formatAddress = (listing: ListingRow) => {
-  const line1 = [listing.address_line1, listing.address_line2].filter(Boolean).join(" ").trim();
-  const locality = [listing.city, listing.state, listing.zip].filter(Boolean).join(", ").replace(", ,", ",");
-  return [line1, locality].filter(Boolean).join(", ") || "Address unavailable";
-};
-
-const toText = (value: string[] | string | null | undefined) => {
-  if (Array.isArray(value)) return value.filter(Boolean).join(", ");
-  return value?.trim() ?? "";
-};
-
-const buildDescription = (
-  aiDescription: string | null | undefined,
-  details: ListingDetailsRow | null,
-  listing: ListingRow
-) => {
-  const preferred = aiDescription?.trim();
-  if (preferred) return preferred;
-
-  const parts = [
-    toText(details?.highlights),
-    details?.recent_updates?.trim(),
-    details?.neighborhood_notes?.trim(),
-    details?.seller_notes?.trim(),
-  ].filter(Boolean);
-
-  if (parts.length > 0) return parts.join("\n\n");
-
-  const facts = [
-    listing.bedrooms != null ? `${listing.bedrooms} bedrooms` : null,
-    listing.bathrooms != null ? `${listing.bathrooms} bathrooms` : null,
-    listing.sqft != null ? `${listing.sqft.toLocaleString()} sqft` : null,
-  ].filter(Boolean);
-
-  return facts.length > 0 ? facts.join(" • ") : "Beautiful, move-in-ready home.";
-};
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export async function POST(
-  _request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
-  const replicateToken = process.env.REPLICATE_API_TOKEN;
+  const { platform } = await request.json();
 
-  const missingEnv = [
-    !supabaseUrl ? "NEXT_PUBLIC_SUPABASE_URL" : null,
-    !supabaseServiceKey ? "SUPABASE_SERVICE_ROLE_KEY" : null,
-    !anthropicApiKey ? "ANTHROPIC_API_KEY" : null,
-    !replicateToken ? "REPLICATE_API_TOKEN" : null,
-  ].filter(Boolean);
+  // Fetch listing
+  const { data: listing } = await supabase
+    .from("listings")
+    .select("address_line1, city, state, zip, price, bedrooms, bathrooms, sqft")
+    .eq("id", params.id)
+    .maybeSingle();
 
-  if (missingEnv.length > 0) {
-    return NextResponse.json(
-      { error: `Missing required environment variables: ${missingEnv.join(", ")}` },
-      { status: 500 }
-    );
-  }
+  if (!listing)
+    return NextResponse.json({ error: "Listing not found" }, { status: 404 });
 
-  try {
-    const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
+  // Fetch listing details
+  const { data: listingDetails } = await supabase
+    .from("listing_details")
+    .select("highlights, neighborhood, recent_updates")
+    .eq("listing_id", params.id)
+    .maybeSingle();
 
-    const [{ data: listing, error: listingError }, { data: details, error: detailsError }, { data: latestOutput, error: outputError }] = await Promise.all([
-      supabase
-        .from("listings")
-        .select("address_line1,address_line2,city,state,zip,price,bedrooms,bathrooms,sqft")
-        .eq("id", params.id)
-        .maybeSingle<ListingRow>(),
-      supabase
-        .from("listing_details")
-        .select("highlights,recent_updates,neighborhood_notes,seller_notes")
-        .eq("listing_id", params.id)
-        .maybeSingle<ListingDetailsRow>(),
-      supabase
-        .from("ai_outputs")
-        .select("listing_description")
-        .eq("listing_id", params.id)
-        .order("version", { ascending: false })
-        .limit(1)
-        .maybeSingle<{ listing_description: string | null }>(),
-    ]);
+  // Fetch latest description
+  const { data: latestOutput } = await supabase
+    .from("ai_outputs")
+    .select("listing_description")
+    .eq("listing_id", params.id)
+    .order("version", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
-    if (listingError || detailsError || outputError) {
-      return NextResponse.json(
-        { error: "Failed to load listing data from Supabase." },
-        { status: 500 }
-      );
-    }
+  const highlights = Array.isArray(listingDetails?.highlights)
+    ? listingDetails.highlights.join(", ")
+    : typeof listingDetails?.highlights === "string"
+    ? listingDetails.highlights
+    : "";
+  const neighborhood = listingDetails?.neighborhood ?? "";
+  const recentUpdates = listingDetails?.recent_updates ?? "";
+  const existingDescription = latestOutput?.listing_description ?? "";
+  const address = `${listing.address_line1}, ${listing.city}, ${listing.state} ${listing.zip}`;
 
-    if (!listing) {
-      return NextResponse.json({ error: "Listing not found" }, { status: 404 });
-    }
+  // Detect architecture from highlights/description for accurate image generation
+  const textToScan = `${highlights} ${recentUpdates} ${existingDescription}`.toLowerCase();
+  const isBrick = textToScan.includes("brick");
+  const isRanch = textToScan.includes("ranch");
+  const hasPorch = textToScan.includes("porch");
+  const hasKitchen = textToScan.includes("kitchen");
+  const hasHardwood = textToScan.includes("hardwood");
 
-    const address = formatAddress(listing);
-    const description = buildDescription(latestOutput?.listing_description, details ?? null, listing);
+  // Determine the single best shot to generate
+  let primaryShot = "exterior front";
+  if (hasKitchen && hasHardwood) primaryShot = "kitchen interior";
+  else if (hasPorch) primaryShot = "screened porch";
+  else primaryShot = "exterior front";
 
-    const anthropic = new Anthropic({ apiKey: anthropicApiKey });
-    const captionResponse = await anthropic.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 500,
-      messages: [
-        {
-          role: "user",
-          content: `${FACEBOOK_PROMPT_INSTRUCTIONS}\n\nListing data:\n- Address: ${address}\n- Price: ${formatCurrency(listing.price)}\n- Beds: ${listing.bedrooms ?? "N/A"}\n- Baths: ${listing.bathrooms ?? "N/A"}\n- Sqft: ${listing.sqft?.toLocaleString() ?? "N/A"}\n- Description: ${description}`,
-        },
-      ],
-    });
+  // Build a literal, constrained image prompt directly — no Claude hallucination risk
+  const architectureDesc = [
+    isBrick ? "brick" : "",
+    isRanch ? "single-story ranch" : "single-family home",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
-    const captionText = captionResponse.content
-      .filter((item) => item.type === "text")
-      .map((item) => item.text)
-      .join("\n")
-      .trim();
+  const interiorDetails = [
+    hasHardwood ? "hardwood floors" : "",
+    hasKitchen ? "renovated kitchen with quartz countertops and stainless appliances" : "",
+    hasPorch ? "screened porch with mature shade trees visible" : "",
+  ]
+    .filter(Boolean)
+    .join(", ");
 
-    if (!captionText) {
-      return NextResponse.json({ error: "Anthropic did not return a caption." }, { status: 500 });
-    }
+  const imagePrompt =
+    primaryShot === "exterior front"
+      ? `Photorealistic real estate photography of a ${architectureDesc} house exterior, ${listing.city} North Carolina neighborhood, bright natural daylight, blue sky, well-maintained lawn, clean composition, no people, no pets, no text overlays, wide angle lens, shot from the street at a flattering angle, professional real estate photography, 8K resolution, magazine quality, photorealistic`
+      : `Photorealistic real estate photography of a ${primaryShot}, ${interiorDetails}, bright natural light from windows, clean and uncluttered, no people, no pets, no artwork on walls, no impossible composite angles, wide angle lens, professional real estate photography, 8K resolution, magazine quality, photorealistic`;
 
-    const replicate = new Replicate({ auth: replicateToken! });
-    const locationPhrase = details?.neighborhood_notes?.trim() || [listing.city, listing.state].filter(Boolean).join(", ") || address;
-    const imagePrompt = `Modern luxury real estate photography, ${locationPhrase}, bright airy interior, hardwood floors, natural light, architectural digest style, 8k, photorealistic`;
+  const platformStyles: Record<string, string> = {
+    facebook: "conversational, 150-200 words, no hashtags, warm and engaging, lead with the neighborhood feel",
+    instagram: "punchy opener, 3-5 lines, then 5-8 relevant hashtags",
+    tiktok: "hook + 3 talking points for a 60-second walkthrough script",
+    twitter: "max 240 characters, direct and compelling",
+    linkedin: "professional, market-aware, 100-150 words",
+    nextdoor: "neighbor-to-neighbor tone, hyperlocal, 100-150 words",
+  };
 
-    const prediction = await replicate.predictions.create({
-      model: "black-forest-labs/flux-schnell",
-      input: {
-        prompt: imagePrompt,
-      },
-    });
-
-    if (!prediction?.id) {
-      return NextResponse.json({ error: "Replicate did not return a prediction ID." }, { status: 500 });
-    }
-
-    return NextResponse.json({
-      caption: captionText,
-      predictionId: prediction.id,
-      imageStatus: "processing",
-    });
-  } catch (error) {
-    return NextResponse.json(
+  // Generate caption via Claude
+  const captionRes = await anthropic.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 600,
+    system:
+      "You are a senior real estate marketing creative director writing for top-tier agents. Write modern, lifestyle-focused copy. Never use clichés like 'nestled', 'stunning', 'don't miss out', or 'motivated seller'. Respond with the caption text only — no JSON, no preamble.",
+    messages: [
       {
-        error: error instanceof Error ? error.message : "Failed to regenerate Facebook content.",
+        role: "user",
+        content: `Write a ${platform} post for this listing.
+
+Property: ${address}
+Price: ${listing.price ? `$${listing.price.toLocaleString()}` : "Call for price"}
+${listing.bedrooms}bd / ${listing.bathrooms}ba / ${listing.sqft?.toLocaleString() ?? ""}sf
+Architecture: ${architectureDesc}
+Highlights: ${highlights}
+Recent updates: ${recentUpdates}
+Neighborhood: ${neighborhood}
+${existingDescription ? `Description context: ${existingDescription.slice(0, 300)}` : ""}
+
+Style: ${platformStyles[platform] ?? platformStyles.facebook}`,
       },
+    ],
+  });
+
+  const caption =
+    captionRes.content[0].type === "text" ? captionRes.content[0].text.trim() : "";
+
+  if (!caption) {
+    return NextResponse.json(
+      { error: "Failed to generate caption. Please try again." },
       { status: 500 }
     );
   }
+
+  // Generate image via Replicate Flux Schnell
+  let imageUrl: string | null = null;
+
+  if (process.env.REPLICATE_API_TOKEN) {
+    try {
+      const startRes = await fetch(
+        "https://api.replicate.com/v1/models/black-forest-labs/flux-schnell/predictions",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${process.env.REPLICATE_API_TOKEN}`,
+            "Content-Type": "application/json",
+            Prefer: "wait",
+          },
+          body: JSON.stringify({
+            input: {
+              prompt: imagePrompt,
+              num_outputs: 1,
+              aspect_ratio: "4:3",
+              output_format: "webp",
+              output_quality: 90,
+              num_inference_steps: 4,
+            },
+          }),
+        }
+      );
+
+      const prediction = await startRes.json();
+
+      // Prefer: wait returns result immediately if done
+      if (prediction.status === "succeeded" && prediction.output) {
+        imageUrl = Array.isArray(prediction.output)
+          ? prediction.output[0]
+          : prediction.output;
+      } else if (prediction.id) {
+        // Fall back to polling if not instant
+        for (let i = 0; i < 30; i++) {
+          await new Promise((r) => setTimeout(r, 2000));
+          const pollRes = await fetch(
+            `https://api.replicate.com/v1/predictions/${prediction.id}`,
+            {
+              headers: {
+                Authorization: `Bearer ${process.env.REPLICATE_API_TOKEN}`,
+              },
+            }
+          );
+          const pollData = await pollRes.json();
+          if (pollData.status === "succeeded") {
+            imageUrl = Array.isArray(pollData.output)
+              ? pollData.output[0]
+              : pollData.output;
+            break;
+          } else if (
+            pollData.status === "failed" ||
+            pollData.status === "canceled"
+          ) {
+            console.error("Replicate prediction failed:", pollData.error);
+            break;
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Replicate error:", err);
+    }
+  }
+
+  return NextResponse.json({ imageUrl, caption });
 }
