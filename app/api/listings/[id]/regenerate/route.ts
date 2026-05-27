@@ -78,13 +78,13 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
   const replicateToken = process.env.REPLICATE_API_TOKEN;
 
   const missingEnv = [
     !supabaseUrl ? "NEXT_PUBLIC_SUPABASE_URL" : null,
-    !supabaseServiceKey ? "SUPABASE_SERVICE_KEY" : null,
+    !supabaseServiceKey ? "SUPABASE_SERVICE_ROLE_KEY" : null,
     !anthropicApiKey ? "ANTHROPIC_API_KEY" : null,
     !replicateToken ? "REPLICATE_API_TOKEN" : null,
   ].filter(Boolean);
