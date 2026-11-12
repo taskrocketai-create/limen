@@ -1,36 +1,42 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Limen
 
-## Getting Started
+Limen is a development-stage AI-assisted real estate listing and marketing application for real estate professionals. Its source includes realtor dashboards, homeowner intake links, AI-assisted listing content, review workflows, and subscription-related routes.
 
-First, run the development server:
+## Stack
+
+Next.js 14 App Router, React, TypeScript, Tailwind CSS, Supabase, Anthropic API, and Stripe. Other external integrations are represented in the code and environment example.
+
+## Repository map
+
+- `app/`: application pages and API routes
+- `components/`: interface components
+- `utils/`: integration helpers
+- `supabase/migrations/`: database schema
+- `LIMEN_BRIEF.md`: product goals and architecture (not a completed-feature checklist)
+- `CC-CLI-TASK.md`: proposed engineering task and test expectations
+
+## Local development
+
+Install Node.js and npm, then:
 
 ```bash
+npm ci
+cp .env.local.example .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Populate `.env.local` with your own development credentials. Never commit keys or real homeowner information. The application relies on separately configured Supabase, Anthropic, Stripe, and potentially other accounts.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+For build validation run `npm run build`. No successful build or test run is claimed in this document.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Engineering notes
 
-## Learn More
+- Verify ownership authorization for listing routes and homeowner intake tokens.
+- Review generated marketing content for factual accuracy and fair-housing compliance before publication.
+- A route's presence does not establish that MLS integration is enabled or production-ready.
+- Use synthetic data and mocked external services for tests.
+- Some features and integrations are in development; consult code rather than assuming every item in the brief is implemented.
 
-To learn more about Next.js, take a look at the following resources:
+## License
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+A license has not yet been selected by the owner. Public source visibility does not itself grant reuse rights.
